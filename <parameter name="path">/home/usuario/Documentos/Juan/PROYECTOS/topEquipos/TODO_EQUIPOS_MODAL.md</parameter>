@@ -1,0 +1,42 @@
+<parameter name="content"># Plan: Mejoras Modal Equipos
+
+## Objetivo
+Poder adjuntar una imagen del equipo y ver todos los campos detalladamente al editar.
+
+## Cambios a realizar:
+
+### 1. resources/views/equipos/index.blade.php
+- Agregar campo file imagen para en el modal
+- Agregar contenedor para previsualización de imagen
+- Mostrar imagen actual en modo edición
+- Agregar botón para eliminar imagen
+
+### 2. public/js/equipos.js
+- Agregar función para previsualizar imagen seleccionada
+- Cargar imagen actual del equipo en modo edición
+- Manejar eliminación de imagen
+- Gestionar el campo `data-imagen` en el botón editar
+
+### 3. app/Http/Controllers/EquipoController.php
+- Agregar validación de imagen (archivo válido, tamaño máx 2MB)
+- Agregar lógica de carga de imagen al crear
+- Agregar lógica de actualización de imagen al editar
+- Mantener imagen anterior si no se carga una nueva
+
+### 4. public/css/equipos.css
+- Estilos para previsualización de imagen
+- Estilos para imagen del equipo en el modal
+
+## Campos del equipo a mostrar/editar:
+- [x] Serie
+- [x] Marca
+- [x] Modelo
+- [x] Tipo
+- [x] Proveedor
+- [x] Ubicación
+- [x] Sector
+- [x] Vto. Garantía
+- [x] Precio
+- [x] Observación
+- [ ] Imagen (AGREGAR)
+</parameter>

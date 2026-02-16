@@ -1,0 +1,111 @@
+.pagina-historial {
+    max-width: 900px;
+}
+
+.historial-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.historial-header h1 {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+.historial-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.input-buscar {
+    padding: 6px 10px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 220px;
+}
+
+.input-buscar:focus {
+    outline: none;
+    border-color: #2f2f2f;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #2f2f2f;
+    padding: 2px 6px;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.btn-link:hover {
+    color: #000;
+}
+
+a.btn-link {
+    text-decoration: underline;
+}
+
+
+.historial-tabla-wrap {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.tabla-historial {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-historial th,
+.tabla-historial td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.tabla-historial th {
+    background: #f0f0f0;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #555;
+}
+
+.tabla-historial tbody tr:hover {
+    background: #fafafa;
+}
+
+
+.td-vacio {
+    color: #666;
+    text-align: center;
+    padding: 24px !important;
+}
+
+/* Estilos para columnas ordenables */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+th.sortable:hover {
+    background: #e0e0e0;
+}
+
+.sort-icon {
+    margin-left: 4px;
+    font-size: 11px;
+    color: #555;
+}

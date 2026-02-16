@@ -1,0 +1,271 @@
+.pagina-modelos {
+    max-width: 800px;
+}
+
+
+.modelos-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.modelos-header h1 {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+.modelos-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.input-buscar {
+    padding: 6px 10px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 180px;
+}
+
+.input-buscar:focus {
+    outline: none;
+    border-color: #2f2f2f;
+}
+
+
+.btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid #888;
+    background: #e8e8e8;
+}
+
+.btn:hover {
+    background: #ddd;
+}
+
+.btn-primario {
+    background: #2f2f2f;
+    color: #fff;
+    border-color: #2f2f2f;
+}
+
+.btn-primario:hover {
+    background: #444;
+}
+
+.btn-secundario {
+    background: #fff;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #2f2f2f;
+    padding: 2px 6px;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.btn-link:hover {
+    color: #000;
+}
+
+.btn-baja {
+    color: #a00;
+}
+
+.btn-baja:hover {
+    color: #c00;
+}
+
+.modelos-tabla-wrap {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.tabla-modelos {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-modelos th,
+.tabla-modelos td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.tabla-modelos th {
+    background: #f0f0f0;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #555;
+}
+
+/* Estilos para columnas ordenables */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+th.sortable:hover {
+    background: #e0e0e0;
+}
+
+.sort-icon {
+    margin-left: 4px;
+    font-size: 11px;
+    color: #555;
+}
+
+.tabla-modelos tbody tr:hover {
+    background: #fafafa;
+}
+
+.th-acciones,
+.td-acciones {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.td-acciones {
+    align-items: center;
+    gap: 8px;
+}
+
+.td-acciones .form-inline {
+    display: inline;
+    margin: 0;
+}
+
+.td-vacio {
+    color: #666;
+    text-align: center;
+    padding: 24px !important;
+}
+
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-activo {
+    background: #e0f0e0;
+    color: #2a5a2a;
+}
+
+.badge-baja {
+    background: #f0e0e0;
+    color: #8a3030;
+}
+
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal-overlay[aria-hidden="false"] {
+    display: flex;
+}
+
+.modal-sector {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 360px;
+}
+
+.modal-sector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-sector-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.modal-cerrar {
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #666;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.modal-cerrar:hover {
+    color: #000;
+}
+
+.modal-sector-body {
+    padding: 16px;
+}
+
+
+.form-grupo {
+    margin-bottom: 14px;
+}
+
+.form-grupo label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-grupo input,
+.form-grupo select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-grupo input:focus,
+.form-grupo select:focus {
+    outline: none;
+    border-color: #2f2f2f;
+}
+
+.modal-sector-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+}
