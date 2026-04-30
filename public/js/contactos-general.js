@@ -54,14 +54,16 @@
         });
     });
 
-    var buscador = document.getElementById('buscador');
-    if (buscador) {
-        buscador.addEventListener('input', function() {
-            var f = this.value.toLowerCase().trim();
-            document.querySelectorAll('#tablaContactos tbody tr').forEach(function(tr) {
-                if (tr.querySelector('.td-vacio')) return;
-                tr.style.display = tr.innerText.toLowerCase().indexOf(f) >= 0 ? '' : 'none';
-            });
+    var searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        let timeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                var url = new URL(window.location.href);
+                url.searchParams.set('search', this.value.trim());
+                window.location.href = url.toString();
+            }, 500);
         });
     }
 

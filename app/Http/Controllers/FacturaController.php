@@ -46,7 +46,16 @@ class FacturaController extends Controller
         $facturas = $query->get();
         $proveedores = Proveedor::activos()->orderBy('proveedor')->get();
 
-        return view('facturas.index', compact('facturas', 'proveedores'));
+        // Variables para el modal de equipos
+        $marcas = Marca::activos()->orderBy('marca')->get();
+        $modelos = Modelo::activos()->with('marca')->orderBy('modelo')->get();
+        $tipos = Tipo::activos()->orderBy('nombreTipo')->get();
+        $ubicaciones = Ubicacion::activos()->orderBy('nombre')->get();
+        $sectores = Sector::activos()->orderBy('nombre')->get();
+
+        $esVistaInactivos = false;
+
+        return view('facturas.index', compact('facturas', 'proveedores', 'marcas', 'modelos', 'tipos', 'ubicaciones', 'sectores', 'esVistaInactivos'));
     }
 
     public function inactivos(Request $request)
@@ -59,50 +68,145 @@ class FacturaController extends Controller
 
         $column = $request->input('column', 'idFactura');
         $order = $request->input('order', 'desc');
-        
+
+        $allowedColumns = ['idFactura', 'numero', 'fecha', 'total', 'created_at'];
+        if (!in_array($column, $allowedColumns, true)) {
+            $column = 'idFactura';
+        }
+        $order = in_array($order, ['asc', 'desc'], true) ? $order : 'desc';
+
         $query->orderBy($column, $order);
 
         $facturas = $query->get();
         $proveedores = Proveedor::all();
 
-        return view('facturas.index', compact('facturas', 'proveedores'));
+        // Variables para el modal de equipos
+        $marcas = Marca::activos()->orderBy('marca')->get();
+        $modelos = Modelo::activos()->with('marca')->orderBy('modelo')->get();
+        $tipos = Tipo::activos()->orderBy('nombreTipo')->get();
+        $ubicaciones = Ubicacion::activos()->orderBy('nombre')->get();
+        $sectores = Sector::activos()->orderBy('nombre')->get();
+
+        $esVistaInactivos = true;
+
+        return view('facturas.index', compact('facturas', 'proveedores', 'marcas', 'modelos', 'tipos', 'ubicaciones', 'sectores', 'esVistaInactivos'));
     }
 
     public function show($id)
     {
-        $factura = Factura::with(['proveedor', 'detalles'])->findOrFail($id);
-        return view('facturas.show', compact('factura'));
+        try {
+            $factura = Factura::with('proveedor')->findOrFail($id);
+            $factura->load('detalles');
+            
+            // Filtrar solo detalles relevantes para equipos
+            $detallesCompraEquipo = $factura->detalles->filter(fn($d) => $d->operacion === 'compra' && $d->de === 'Equipo');
+            
+            $detallesConEquipos = $detallesCompraEquipo->map(function ($detalle) use ($factura) {
+                $equipos = \App\Models\Equipo::where('numeroFactura', $factura->numero)
+                    ->where('observacion', 'LIKE', '%' . $detalle->concepto . '%')
+                    ->take(10)
+                    ->with('tipo')
+                    ->get(['id', 'serie', 'idTipo'])
+                    ->map(fn($e) => [
+                        'id' => $e->id,
+                        'serie' => $e->serie,
+                        'tipo' => $e->tipo->nombreTipo ?? 'N/A'
+                    ]);
+                
+                return [
+                    'detalle' => $detalle,
+                    'equipos' => $equipos
+                ];
+            });
+            
+            return response()->json([
+                'idFactura' => $factura->idFactura,
+                'numero' => $factura->numero,
+                'fecha' => $factura->fecha ? $factura->fecha->format('Y-m-d') : null,
+                'idProveedor' => $factura->idProveedor,
+                'proveedor' => $factura->proveedor ? $factura->proveedor->proveedor : null,
+                'observacion' => $factura->observacion,
+                'idOrdenDeCompra' => $factura->idOrdenDeCompra,
+                'idPresupuesto' => $factura->idPresupuesto,
+                'obra' => $factura->obra,
+                'descripcion_contenido' => $factura->descripcion_contenido,
+                'porcentajeBonificacion' => $factura->porcentajeBonificacion,
+                'importeBonificacion' => $factura->importeBonificacion,
+                'neto' => $factura->neto,
+                'iva105' => $factura->iva105,
+                'iva21' => $factura->iva21,
+                'total' => $factura->total,
+                'estado' => $factura->estado,
+                'detalles_con_equipos' => $detallesConEquipos,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Factura no encontrada',
+                'message' => 'La factura con ID ' . $id . ' no existe'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener la factura',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function crear(Request $request)
     {
-        $request->validate([
+        $this->mergeCleaned($request, [
+            'numero' => $this->cleanString($request->input('numero')),
+            'observacion' => $this->cleanTextarea($request->input('observacion')),
+            'idOrdenDeCompra' => $this->cleanDigits((string) $request->input('idOrdenDeCompra')),
+            'idPresupuesto' => $this->cleanDigits((string) $request->input('idPresupuesto')),
+            'obra' => $this->cleanString($request->input('obra')),
+            'descripcion_contenido' => $this->cleanTextarea($request->input('descripcion_contenido')),
+        ]);
+
+        $data = $request->validate([
             'numero' => 'required|string|max:20|unique:facturas,numero',
             'fecha' => 'nullable|date',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
+            'observacion' => 'nullable|string|max:1000',
+            'idOrdenDeCompra' => 'nullable|digits_between:1,10',
+            'idPresupuesto' => 'nullable|digits_between:1,10',
+            'obra' => 'nullable|string|max:15',
+            'descripcion_contenido' => 'nullable|string|max:1000',
+            'porcentajeBonificacion' => 'nullable|numeric|min:0|max:100',
+            'importeBonificacion' => 'nullable|numeric|min:0',
+            'detalles' => 'nullable|array|max:100',
+            'detalles.*.operacion' => 'nullable|in:compra,mano_obra',
+            'detalles.*.de' => 'nullable|in:Equipo,Herramienta,Material,Sucursal',
+            'detalles.*.cantidad' => 'nullable|numeric|min:0.0001',
+            'detalles.*.concepto' => 'nullable|string|max:150',
+            'detalles.*.precioUnitario' => 'nullable|numeric|min:0',
+            'detalles.*.porcentajeIva' => 'nullable|numeric|min:0|max:21',
+            'detalles.*.porcentajeDto' => 'nullable|numeric|min:0|max:100',
+            'detalles.*.subtotal' => 'nullable|numeric|min:0',
+            'detalles.*.obra' => 'nullable|string|max:15',
         ]);
 
         DB::beginTransaction();
 
         try {
             $factura = Factura::create([
-                'numero' => $request->numero,
-                'fecha' => $request->fecha,
-                'idProveedor' => $request->idProveedor,
-                'observacion' => $request->observacion,
-                'idOrdenDeCompra' => $request->idOrdenDeCompra ?: null,
-                'idPresupuesto' => $request->idPresupuesto ?: null,
-                'obra' => $request->obra ?: null,
-                'descripcion_contenido' => $request->descripcion_contenido ?: null,
-                'porcentajeBonificacion' => $request->porcentajeBonificacion ?: 0,
-                'importeBonificacion' => $request->importeBonificacion ?: 0,
+                'numero' => $data['numero'],
+                'fecha' => $data['fecha'] ?? null,
+                'idProveedor' => $data['idProveedor'],
+                'observacion' => $data['observacion'] ?? null,
+                'idOrdenDeCompra' => $data['idOrdenDeCompra'] ?? null,
+                'idPresupuesto' => $data['idPresupuesto'] ?? null,
+                'obra' => $data['obra'] ?? null,
+                'descripcion_contenido' => $data['descripcion_contenido'] ?? null,
+                'porcentajeBonificacion' => $data['porcentajeBonificacion'] ?? 0,
+                'importeBonificacion' => $data['importeBonificacion'] ?? 0,
             ]);
 
             $equiposPorCrear = [];
 
             // Si hay detalles, procesarlos
-            if ($request->has('detalles') && is_array($request->detalles)) {
-                foreach ($request->detalles as $index => $detalleData) {
+            if (!empty($data['detalles']) && is_array($data['detalles'])) {
+                foreach ($data['detalles'] as $index => $detalleData) {
                     if (!empty($detalleData['concepto'])) {
                         $detalle = new FacturaDetalle($detalleData);
                         $detalle->idFactura = $factura->idFactura;
@@ -111,13 +215,22 @@ class FacturaController extends Controller
                         $detalle->save();
                         
                         // Si es una operacion de compra de equipo, agregar a la lista
+                        // Se crea una entrada por cada unidad de equipo
                         if (!empty($detalleData['operacion']) && $detalleData['operacion'] === 'compra' 
                             && !empty($detalleData['de']) && $detalleData['de'] === 'Equipo') {
-                            $equiposPorCrear[] = [
-                                'idDetalle' => $detalle->idFacturaDet,
-                                'concepto' => $detalleData['concepto'] ?? '',
-                                'cantidad' => $detalleData['cantidad'] ?? 1,
-                            ];
+                            $cantidadEquipos = intval($detalleData['cantidad'] ?? 1);
+                            
+                            // Crear una entrada por cada equipo
+                            for ($i = 0; $i < $cantidadEquipos; $i++) {
+                                $equiposPorCrear[] = [
+                                    'idDetalle' => $detalle->idFacturaDet,
+                                    'concepto' => $detalleData['concepto'] ?? '',
+                                    'cantidad' => 1,
+                                    // Agregar información de grupo para auto-completar
+                                    'cantidadOriginal' => $cantidadEquipos,
+                                    'grupoIndex' => $i,
+                                ];
+                            }
                         }
                     }
                 }
@@ -128,16 +241,15 @@ class FacturaController extends Controller
 
             DB::commit();
 
-            // Si hay equipos por crear, redirigir con datos para mostrar modales
-            if (count($equiposPorCrear) > 0) {
-                return redirect()->route('facturas.index')
-                    ->with('success', 'Factura creada correctamente. Debe crear ' . count($equiposPorCrear) . ' equipo(s).')
-                    ->with('equiposPorCrear', $equiposPorCrear)
-                    ->with('idFactura', $factura->idFactura)
-                    ->with('idProveedor', $factura->idProveedor);
-            }
+            // Calcular el total de equipos a crear
+            $totalEquiposPorCrear = count($equiposPorCrear);
 
-            return redirect()->back()->with('success', 'Factura creada correctamente');
+            // Si hay equipos por crear, redirigir con datos para mostrar modales
+            session()->forget(['equiposPorCrear', 'idFactura', 'idProveedor']);
+            
+            return redirect()->to(url()->previous())
+                ->with('success', 'Factura creada correctamente.');
+                
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Error al crear la factura: ' . $e->getMessage());
@@ -151,34 +263,60 @@ class FacturaController extends Controller
     {
         $factura = Factura::activos()->where('idFactura', $id)->firstOrFail();
 
-        $request->validate([
+        $this->mergeCleaned($request, [
+            'numero' => $this->cleanString($request->input('numero')),
+            'observacion' => $this->cleanTextarea($request->input('observacion')),
+            'idOrdenDeCompra' => $this->cleanDigits((string) $request->input('idOrdenDeCompra')),
+            'idPresupuesto' => $this->cleanDigits((string) $request->input('idPresupuesto')),
+            'obra' => $this->cleanString($request->input('obra')),
+            'descripcion_contenido' => $this->cleanTextarea($request->input('descripcion_contenido')),
+        ]);
+
+        $data = $request->validate([
             'numero' => 'required|string|max:20|unique:facturas,numero,' . $id . ',idFactura',
             'fecha' => 'nullable|date',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
+            'observacion' => 'nullable|string|max:1000',
+            'idOrdenDeCompra' => 'nullable|digits_between:1,10',
+            'idPresupuesto' => 'nullable|digits_between:1,10',
+            'obra' => 'nullable|string|max:15',
+            'descripcion_contenido' => 'nullable|string|max:1000',
+            'porcentajeBonificacion' => 'nullable|numeric|min:0|max:100',
+            'importeBonificacion' => 'nullable|numeric|min:0',
+            'detalles' => 'nullable|array|max:100',
+            'detalles.*.operacion' => 'nullable|in:compra,mano_obra',
+            'detalles.*.de' => 'nullable|in:Equipo,Herramienta,Material,Sucursal',
+            'detalles.*.cantidad' => 'nullable|numeric|min:0.0001',
+            'detalles.*.concepto' => 'nullable|string|max:150',
+            'detalles.*.precioUnitario' => 'nullable|numeric|min:0',
+            'detalles.*.porcentajeIva' => 'nullable|numeric|min:0|max:21',
+            'detalles.*.porcentajeDto' => 'nullable|numeric|min:0|max:100',
+            'detalles.*.subtotal' => 'nullable|numeric|min:0',
+            'detalles.*.obra' => 'nullable|string|max:15',
         ]);
 
         DB::beginTransaction();
 
         try {
             $factura->update([
-                'numero' => $request->numero,
-                'fecha' => $request->fecha,
-                'idProveedor' => $request->idProveedor,
-                'observacion' => $request->observacion,
-                'idOrdenDeCompra' => $request->idOrdenDeCompra ?: null,
-                'idPresupuesto' => $request->idPresupuesto ?: null,
-                'obra' => $request->obra ?: null,
-                'descripcion_contenido' => $request->descripcion_contenido ?: null,
-                'porcentajeBonificacion' => $request->porcentajeBonificacion ?: 0,
-                'importeBonificacion' => $request->importeBonificacion ?: 0,
+                'numero' => $data['numero'],
+                'fecha' => $data['fecha'] ?? null,
+                'idProveedor' => $data['idProveedor'],
+                'observacion' => $data['observacion'] ?? null,
+                'idOrdenDeCompra' => $data['idOrdenDeCompra'] ?? null,
+                'idPresupuesto' => $data['idPresupuesto'] ?? null,
+                'obra' => $data['obra'] ?? null,
+                'descripcion_contenido' => $data['descripcion_contenido'] ?? null,
+                'porcentajeBonificacion' => $data['porcentajeBonificacion'] ?? 0,
+                'importeBonificacion' => $data['importeBonificacion'] ?? 0,
             ]);
 
             // Si hay detalles, procesarlos
-            if ($request->has('detalles') && is_array($request->detalles)) {
+            if (!empty($data['detalles']) && is_array($data['detalles'])) {
                 // Eliminar detalles existentes
                 FacturaDetalle::where('idFactura', $factura->idFactura)->delete();
                 
-                foreach ($request->detalles as $index => $detalleData) {
+                foreach ($data['detalles'] as $index => $detalleData) {
                     if (!empty($detalleData['concepto'])) {
                         $detalle = new FacturaDetalle($detalleData);
                         $detalle->idFactura = $factura->idFactura;
@@ -206,31 +344,24 @@ class FacturaController extends Controller
      */
     public function siguienteNumero()
     {
-        // Obtener el ultimo numero de factura del dia actual
+        $prefijo = date('ymd');
         $hoy = date('Y-m-d');
+
         $ultimaFactura = Factura::whereDate('created_at', $hoy)
+            ->where('numero', 'like', $prefijo . '-%')
             ->orderBy('idFactura', 'desc')
             ->first();
-        
+
         if ($ultimaFactura) {
-            // Extraer el numero secuencial del formato XXX-XXXXXXXX
-            $partes = explode('-', $ultimaFactura->numero);
-            if (count($partes) === 2) {
-                $secuencial = intval($partes[1]) + 1;
-            } else {
-                $secuencial = 1;
-            }
+            $partes = explode('-', (string) $ultimaFactura->numero);
+            $secuencial = (count($partes) === 2) ? (intval($partes[1]) + 1) : 1;
         } else {
             $secuencial = 1;
         }
-        
-        // Formato: 001-00000001
-        $prefijo = date('ymd'); // 6 digitos: aammdd
-        $secuencialStr = str_pad($secuencial, 8, '0', STR_PAD_LEFT);
-        
-        return response()->json([
-            'numero' => $prefijo . '-' . $secuencialStr
-        ]);
+
+        $numero = $prefijo . '-' . str_pad((string) $secuencial, 8, '0', STR_PAD_LEFT);
+
+        return response()->json(['numero' => $numero]);
     }
 
     /**
@@ -268,7 +399,9 @@ class FacturaController extends Controller
      */
     public function sectoresPorUbicacion($idUbicacion)
     {
-        $sectores = Sector::where('ubicacion_id', $idUbicacion)->activos()->get();
+        $sectores = Sector::whereHas('ubicaciones', function ($query) use ($idUbicacion) {
+            $query->where('ubicaciones.id', $idUbicacion);
+        })->activos()->get();
         return response()->json($sectores);
     }
 
@@ -276,19 +409,25 @@ class FacturaController extends Controller
     {
         $factura = Factura::findOrFail($id);
 
-        $request->validate([
+        $this->mergeCleaned($request, [
+            'concepto' => $this->cleanString($request->input('concepto')),
+            'obra' => $this->cleanString($request->input('obra')),
+        ]);
+
+        $data = $request->validate([
             'concepto' => 'required|string|max:150',
             'cantidad' => 'required|numeric|min:0',
             'precioUnitario' => 'required|numeric|min:0',
-            'porcentajeIva' => 'nullable|numeric|min:0|max:100',
-            'porcentajeDto' => 'nullable|numeric|min=0|max=100',
-            'operacionDe' => 'nullable|integer|min=1|max=3',
-            'tipoOperacion' => 'nullable|integer|min=1|max=2',
+            'porcentajeIva' => 'nullable|numeric|min:0|max:21',
+            'porcentajeDto' => 'nullable|numeric|min:0|max:100',
+            'operacionDe' => 'nullable|integer|min:1|max:3',
+            'tipoOperacion' => 'nullable|integer|min:1|max:2',
+            'obra' => 'nullable|string|max:15',
         ]);
 
         $ultimoRenglon = FacturaDetalle::where('idFactura', $id)->max('renglonFactura') ?? 0;
 
-        $detalle = new FacturaDetalle($request->all());
+        $detalle = new FacturaDetalle($data);
         $detalle->idFactura = $id;
         $detalle->renglonFactura = $ultimoRenglon + 1;
         $detalle->save();
@@ -319,16 +458,42 @@ class FacturaController extends Controller
         return redirect()->back()->with('success', 'Detalle eliminado correctamente');
     }
 
+    public function apiTieneEquipos($id)
+    {
+        $count = \App\Models\FacturaDetalle::where('idFactura', $id)
+            ->where('operacion', 'compra')
+            ->where('de', 'Equipo')
+            ->count();
+        
+        return response()->json(['tieneEquipos' => $count > 0, 'cantidad' => $count]);
+    }
+
     public function baja(Request $request, $id)
     {
         $request->validate([
-            'observacion' => 'required|string|max:1000',
+            'observacion' => 'nullable|string|max:1000',
         ]);
 
         $factura = Factura::activos()->where('idFactura', $id)->firstOrFail();
 
-        if (!$factura->darDeBaja($request->observacion)) {
-            return redirect()->back()->with('error', 'No se pudo dar de baja la factura');
+        $eliminarEquipos = $request->boolean('eliminar_equipos', false);
+
+        if ($eliminarEquipos) {
+            Equipo::where('numeroFactura', $factura->numero)->delete();
+        }
+
+        try {
+            $data = ['estado' => 'baja'];
+            if ($request->filled('observacion')) {
+                $motivo = $this->cleanTextarea($request->input('observacion'));
+                if ($motivo !== null && $motivo !== '') {
+                    $prev = trim((string) ($factura->observacion ?? ''));
+                    $data['observacion'] = $prev === '' ? ('[Baja] ' . $motivo) : ($prev . "\n\n[Baja] " . $motivo);
+                }
+            }
+            $factura->update($data);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'No se pudo dar de baja la factura: ' . $e->getMessage());
         }
 
         return redirect()->back()->with('success', 'Factura dada de baja correctamente');
@@ -350,5 +515,18 @@ class FacturaController extends Controller
             ->get();
 
         return response()->json($facturas);
+    }
+
+    /**
+     * Limpiar sesión de equipos pendientes
+     */
+    public function limpiarSesionEquipos()
+    {
+        // Limpiar los datos de sesión
+        session()->forget('equiposPorCrear');
+        session()->forget('idFactura');
+        session()->forget('idProveedor');
+        
+        return response()->json(['success' => true]);
     }
 }

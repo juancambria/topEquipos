@@ -3,23 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Ubicacion extends Model
 {
     protected $table      = 'ubicaciones';
     protected $primaryKey = 'id';
     public    $timestamps = false;
-    protected $fillable   = ['id', 'nombre', 'estado'];
+    protected $fillable   = ['id', 'nombre', 'codigo', 'ciudad', 'provincia', 'telefono', 'direccion', 'codigo_postal', 'estado'];
 
     protected $attributes = [
         'estado' => 'activo',
     ];
 
-    /** Relación: una ubicación tiene muchos sectores */
-    public function sectores(): HasMany
+    /** Relación: una ubicación puede tener muchos sectores */
+    public function sectores(): BelongsToMany
     {
-        return $this->hasMany(Sector::class, 'ubicacion_id');
+        return $this->belongsToMany(Sector::class, 'sector_ubicacion', 'ubicacion_id', 'sector_id');
     }
 
     /** Scope: solo activos */
@@ -33,6 +33,12 @@ class Ubicacion extends Model
     {
         $ubicacion = new self();
         $ubicacion->nombre = $data['nombre'];
+        $ubicacion->codigo = $data['codigo'] ?? null;
+        $ubicacion->ciudad = $data['ciudad'] ?? null;
+        $ubicacion->provincia = $data['provincia'] ?? null;
+        $ubicacion->telefono = $data['telefono'] ?? null;
+        $ubicacion->direccion = $data['direccion'] ?? null;
+        $ubicacion->codigo_postal = $data['codigo_postal'] ?? null;
         $ubicacion->estado = 'activo';
 
         // Si se proporciona un ID manual, usarlo
@@ -47,7 +53,15 @@ class Ubicacion extends Model
     /** Actualizar nombre */
     public function actualizar(array $data): bool
     {
-        return $this->fill(['nombre' => $data['nombre']])->save();
+        return $this->fill([
+            'nombre' => $data['nombre'],
+            'codigo' => $data['codigo'] ?? null,
+            'ciudad' => $data['ciudad'] ?? null,
+            'provincia' => $data['provincia'] ?? null,
+            'telefono' => $data['telefono'] ?? null,
+            'direccion' => $data['direccion'] ?? null,
+            'codigo_postal' => $data['codigo_postal'] ?? null,
+        ])->save();
     }
 
 /** Dar de baja: solo si no tiene sectores con equipos activos */
@@ -82,4 +96,3 @@ class Ubicacion extends Model
         return $guardado;
     }
 }
-

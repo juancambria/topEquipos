@@ -69,7 +69,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: 100000;
+    isolation: isolate;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -177,3 +178,14 @@
     cursor: not-allowed;
 }
 
+/* Una sola caja de texto: subrayar solo la 1ª letra (Alt+N → N, Alt+S → S), sin partir la palabra */
+.modal-confirmacion-botones .modal-btn-accesskey-word {
+    letter-spacing: 0;
+    font-kerning: normal;
+}
+
+.modal-confirmacion-botones .modal-btn-accesskey-word::first-letter {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+}

@@ -28,6 +28,12 @@ class Tipo extends Model
         return $this->hasMany(Modelo::class, 'idTipo', 'idTipo');
     }
 
+    public function marcas()
+    {
+        return $this->belongsToMany(Marca::class, 'marca_tipo', 'idTipo', 'idMarca')
+            ->withTimestamps();
+    }
+
     public function scopeActivos($query)
     {
         return $query->where('estado', 'activo');

@@ -12,6 +12,7 @@ class Proveedor extends Model
     protected $fillable = [
         'proveedor',
         'mail',
+        'telefono',
         'provincia',
         'ciudad',
         'codigo_postal',
@@ -54,29 +55,8 @@ class Proveedor extends Model
         return $this->update($data);
     }
 
-public function darDeBaja(?string $observacion = null): bool
-    {
-        if ($this->equipos()->where('estado', 'activo')->exists()) {
-            return false;
-        }
-        
-        $guardado = $this->update(['estado' => 'baja']);
-        
-        if ($guardado) {
-            Historial::registrar($this->id, 'BAJA', 'Proveedor dado de baja', $observacion);
-        }
-        
-        return $guardado;
-    }
-
     public function darDeAlta(): bool
     {
-        $guardado = $this->update(['estado' => 'activo']);
-        
-        if ($guardado) {
-            Historial::registrar($this->id, 'ALTA', 'Proveedor dado de alta');
-        }
-        
-        return $guardado;
+        return $this->update(['estado' => 'activo']);
     }
 }

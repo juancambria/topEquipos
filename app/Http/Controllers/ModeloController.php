@@ -6,25 +6,15 @@ use App\Models\Modelo;
 use App\Models\Marca;
 use App\Models\Tipo;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ModeloController extends Controller
 {
     public function index(Request $request)
     {
         $query = Modelo::with(['marca', 'tipo'])->activos();
-
-        // Ordenamiento por columna
-        $column = $request->input('column', 'idModelo');
-        $order = $request->input('order', 'asc');
-        
-        $allowedColumns = ['idModelo', 'modelo', 'created_at'];
-        if (!in_array($column, $allowedColumns)) {
-            $column = 'idModelo';
-        }
-        
-        $order = in_array($order, ['asc', 'desc']) ? $order : 'asc';
-        
-        $query->orderBy($column, $order);
+        $this->applySearchAndSorting($request, $query, null, ['idModelo', 'modelo', 'created_at'], 'idModelo');
 
         $modelos = $query->get();
         $marcas = Marca::activos()->orderBy('marca')->get();
@@ -36,18 +26,7 @@ class ModeloController extends Controller
     public function inactivos(Request $request)
     {
         $query = Modelo::with(['marca', 'tipo'])->where('estado', 'baja');
-
-        $column = $request->input('column', 'idModelo');
-        $order = $request->input('order', 'asc');
-        
-        $allowedColumns = ['idModelo', 'modelo', 'created_at'];
-        if (!in_array($column, $allowedColumns)) {
-            $column = 'idModelo';
-        }
-        
-        $order = in_array($order, ['asc', 'desc']) ? $order : 'asc';
-        
-        $query->orderBy($column, $order);
+        $this->applySearchAndSorting($request, $query, null, ['idModelo', 'modelo', 'created_at'], 'idModelo');
 
         $modelos = $query->get();
         $marcas = Marca::orderBy('marca')->get();
@@ -58,25 +37,63 @@ class ModeloController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'modelo'  => 'required|string|max:100',
-            'idMarca' => 'required|exists:marcas,idMarca',
-            'idTipo'  => 'nullable|exists:tipos,idTipo',
+        $this->mergeCleaned($request, [
+            'modelo' => $this->cleanString($request->input('modelo')),
         ]);
 
-        Modelo::crear($data);
+        $data = $request->validate([
+            'modelo'  => [
+                'required',
+                'string',
+                'max:40',
+                Rule::unique('modelos', 'modelo')->where(function ($query) use ($request) {
+                    return $query->where('idMarca', $request->input('idMarca'))
+                        ->where('idTipo', $request->input('idTipo'));
+                }),
+            ],
+            'idMarca' => 'required|exists:marcas,idMarca',
+            'idTipo'  => 'required|exists:tipos,idTipo',
+        ]);
 
-        return redirect()->route('modelos.index')
-            ->with('success', 'Modelo creado correctamente');
+        $this->validarRelacionMarcaTipo((int) $data['idMarca'], (int) $data['idTipo']);
+
+        $modelo = Modelo::crear($data);
+
+        $redirect = $request->input('redirect_to', route('modelos.index'));
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Modelo creado correctamente',
+                'id' => $modelo->idModelo,
+                'nombre' => $modelo->modelo
+            ]);
+        }
+
+        return redirect($redirect)->with('success', 'Modelo creado correctamente');
     }
 
     public function update(Request $request, Modelo $modelo)
     {
-        $data = $request->validate([
-            'modelo'  => 'required|string|max:100',
-            'idMarca' => 'required|exists:marcas,idMarca',
-            'idTipo'  => 'nullable|exists:tipos,idTipo',
+        $this->mergeCleaned($request, [
+            'modelo' => $this->cleanString($request->input('modelo')),
         ]);
+
+        $data = $request->validate([
+            'modelo'  => [
+                'required',
+                'string',
+                'max:40',
+                Rule::unique('modelos', 'modelo')->where(function ($query) use ($request) {
+                    return $query->where('idMarca', $request->input('idMarca'))
+                        ->where('idTipo', $request->input('idTipo'));
+                })->ignore($modelo->idModelo, 'idModelo'),
+            ],
+            'idMarca' => 'required|exists:marcas,idMarca',
+            'idTipo'  => 'required|exists:tipos,idTipo',
+        ]);
+
+        $this->validarRelacionMarcaTipo((int) $data['idMarca'], (int) $data['idTipo']);
 
         $modelo->actualizar($data);
 
@@ -86,17 +103,14 @@ class ModeloController extends Controller
 
     public function destroy(Request $request, Modelo $modelo)
     {
-        $request->validate([
-            'observacion' => 'required|string|max:1000',
-        ]);
-
-        if (!$modelo->darDeBaja($request->observacion)) {
+        try {
+            $modelo->delete();
+        } catch (\Throwable $e) {
             return redirect()->route('modelos.index')
-                ->with('error', 'No se puede dar de baja el modelo porque tiene equipos activos asociados');
+                ->with('error', 'No se puede eliminar el modelo porque tiene registros asociados');
         }
-
         return redirect()->route('modelos.index')
-            ->with('success', 'Modelo dado de baja correctamente');
+            ->with('success', 'Modelo eliminado correctamente');
     }
 
     public function alta(Modelo $modelo)
@@ -120,5 +134,30 @@ class ModeloController extends Controller
 
         return response()->json($modelos);
     }
-}
 
+    public function porMarcaYTipo($idMarca, $idTipo)
+    {
+        $modelos = Modelo::where('idMarca', $idMarca)
+            ->where('idTipo', $idTipo)
+            ->activos()
+            ->orderBy('modelo')
+            ->get();
+
+        return response()->json($modelos);
+    }
+
+    protected function validarRelacionMarcaTipo(int $idMarca, int $idTipo): void
+    {
+        $existe = Marca::where('idMarca', $idMarca)
+            ->whereHas('tipos', function ($query) use ($idTipo) {
+                $query->where('tipos.idTipo', $idTipo);
+            })
+            ->exists();
+
+        if (! $existe) {
+            throw ValidationException::withMessages([
+                'idMarca' => 'La marca seleccionada no está vinculada al tipo elegido.',
+            ]);
+        }
+    }
+}

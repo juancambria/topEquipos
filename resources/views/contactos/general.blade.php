@@ -5,16 +5,20 @@
 @endsection
 
 @section('content')
-<div class="pagina-contactos">
+<div class="page-container pagina-contactos" data-context-id-proveedor="">
     <header class="contactos-header">
-        <h1>Contactos - Vista General</h1>
+        <h1>Gestión de Contactos</h1>
         <div class="contactos-toolbar">
-            <input type="search" id="buscador" class="input-buscar" placeholder="Buscar contacto..." autocomplete="off">
-            @if(request()->routeIs('contactos.inactivos'))
-                <a href="{{ route('contactos.general') }}" class="btn btn-primario">Ver activos</a>
-            @else
-                <a href="{{ route('contactos.inactivos') }}" class="btn btn-primario">Ver inactivos</a>
-            @endif
+            <div class="search-wrapper">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input type="search" id="searchInput" class="input-buscar" placeholder="Buscar contacto..." autocomplete="off" value="{{ request('search') }}">
+            </div>
+            <span id="selectedContactoInfo" class="selected-info">Ningún contacto seleccionado</span>
+    <button type="button" class="btn btn-primario tool-btn" data-toolbar-key="a" onclick="abrirModalContacto('crear', null, null, null, null, null, null)" title="Alt+A"><span class="tool-icon">➕</span><span class="tool-label"><span class="acc-k">A</span>ñadir</span></button>
+            <button type="button" id="btnEditarContacto" class="btn btn-primario tool-btn" data-toolbar-key="e" disabled title="Alt+E"><span class="tool-icon">✏️</span><span class="tool-label"><span class="acc-k">E</span>ditar</span></button>
+
+            <button type="button" id="btnEliminarContacto" class="btn btn-baja tool-btn" data-toolbar-key="l" disabled title="Alt+L"><span class="tool-icon">🗑️</span><span class="tool-label">E<span class="acc-k">l</span>iminar</span></button>
+            <!-- Botón Ver inactivos eliminado -->
         </div>
     </header>
 
@@ -22,76 +26,58 @@
         <table class="tabla-contactos" id="tablaContactosGeneral">
             <thead>
                 <tr>
+
                     <th class="sortable" data-column="idContacto" data-order="{{ request('order', 'asc') }}">
                         ID
-                        @if(request('column') == 'idContacto')
-                            <span class="sort-icon">{{ request('order', 'asc') == 'asc' ? '▲' : '▼' }}</span>
-                        @else
-                            <span class="sort-icon">↕</span>
-                        @endif
+                        @include('partials.sort-icon', ['column' => 'idContacto'])
                     </th>
                     <th class="sortable" data-column="nombre" data-order="{{ request('order', 'asc') }}">
                         Nombre
-                        @if(request('column') == 'nombre')
-                            <span class="sort-icon">{{ request('order', 'asc') == 'asc' ? '▲' : '▼' }}</span>
-                        @else
-                            <span class="sort-icon">↕</span>
-                        @endif
+                        @include('partials.sort-icon', ['column' => 'nombre'])
                     </th>
                     <th class="sortable" data-column="telefono" data-order="{{ request('order', 'asc') }}">
                         Teléfono
-                        @if(request('column') == 'telefono')
-                            <span class="sort-icon">{{ request('order', 'asc') == 'asc' ? '▲' : '▼' }}</span>
-                        @else
-                            <span class="sort-icon">↕</span>
-                        @endif
+                        @include('partials.sort-icon', ['column' => 'telefono'])
                     </th>
+                    <th class="sortable" data-column="mail" data-order="{{ request('order', 'asc') }}">
+                        Mail
+                        @include('partials.sort-icon', ['column' => 'mail'])
+                    </th>
+
                     <th class="sortable" data-column="cargo" data-order="{{ request('order', 'asc') }}">
                         Cargo
-                        @if(request('column') == 'cargo')
-                            <span class="sort-icon">{{ request('order', 'asc') == 'asc' ? '▲' : '▼' }}</span>
-                        @else
-                            <span class="sort-icon">↕</span>
-                        @endif
+                        @include('partials.sort-icon', ['column' => 'cargo'])
                     </th>
-                    <th>Proveedor</th>
-                    @if(request()->routeIs('contactos.inactivos'))
-                    <th>Estado</th>
-                    @endif
-                    <th class="th-acciones">Acciones</th>
+                    <th class="sortable" data-column="proveedor" data-order="{{ request('order', 'asc') }}">
+                        Proveedor
+                        @include('partials.sort-icon', ['column' => 'proveedor'])
+                    </th>
+                    <th class="sortable" data-column="observacion" data-order="{{ request('order', 'asc') }}">
+                        Observación
+                        @include('partials.sort-icon', ['column' => 'observacion'])
+                    </th>
                 </tr>
+
             </thead>
             <tbody>
                 @forelse($contactos as $c)
-                <tr>
+                <tr data-id="{{ $c->idContacto }}" data-nombre="{{ e($c->nombre) }}" data-telefono="{{ e($c->telefono ?? '') }}" data-cargo="{{ e($c->cargo ?? '') }}" data-id-proveedor="{{ $c->idProveedor }}">
+
                     <td>{{ $c->idContacto }}</td>
                     <td>{{ $c->nombre }}</td>
                     <td>{{ $c->telefono ?? '—' }}</td>
+                    <td>{{ $c->mail ?? '—' }}</td>
                     <td>{{ $c->cargo ?? '—' }}</td>
                     <td>{{ $c->proveedor->proveedor ?? '—' }}</td>
-                    @if(request()->routeIs('contactos.inactivos'))
-                    <td><span class="badge badge-baja">{{ $c->estado }}</span></td>
-                    @endif
-                    <td class="td-acciones">
-                        @if(request()->routeIs('contactos.inactivos'))
-                            <form method="POST" action="{{ route('contactos.alta', $c) }}" class="form-inline" onsubmit="return confirm('¿Activar este contacto?')">
-                                @csrf
-                                <button type="submit" class="btn btn-link btn-alta">Alta</button>
-                            </form>
-                        @else
-                            <a href="{{ route('contactos.index', $c->idProveedor) }}" class="btn btn-link">Ver</a>
-                        @endif
-                    </td>
+                    <td>{{ $c->observacion ?? '—' }}</td>
+
+
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="td-vacio">
-                        @if(request()->routeIs('contactos.inactivos'))
-                            No hay contactos inactivos.
-                        @else
-                            No hay contactos.
-                        @endif
-                    </td>
+
+                    <td colspan="7" class="td-vacio">No hay contactos.</td>
+
                 </tr>
                 @endforelse
             </tbody>
@@ -99,8 +85,53 @@
     </div>
 </div>
 
-@push('scripts')
-<script src="{{ asset('js/contactos-general.js') }}"></script>
-@endpush
-@endsection
+<div id="modalContacto" class="modal-overlay" data-modal-focus="#contactoIdProveedor" aria-hidden="true">
+    <div class="modal-sector">
+        <div class="modal-sector-header">
+            <h2 id="modalContactoTitulo">Contacto</h2>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalContacto()" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formContacto" method="POST" class="modal-sector-body">
 
+
+            @csrf
+            <input type="hidden" id="contactoIdProveedorHidden" name="idProveedor" value="">
+            <div class="form-grupo">
+                <label for="contactoIdProveedor">Proveedor</label>
+                <select id="contactoIdProveedor" name="idProveedor" required>
+                    <option value="" disabled selected>Seleccione proveedor...</option>
+                    @foreach($proveedores as $p)
+                        <option value="{{ $p->idProveedor }}">{{ $p->proveedor }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label for="contactoNombre">Nombre</label>
+                <input type="text" id="contactoNombre" name="nombre" required autocomplete="off">
+            </div>
+            <div class="form-grupo">
+                <label for="contactoTelefono">Teléfono</label>
+                <input type="text" id="contactoTelefono" name="telefono" autocomplete="off">
+            </div>
+            <div class="form-grupo">
+                <label for="contactoMail">Mail</label>
+                <input type="email" id="contactoMail" name="mail" autocomplete="off">
+            </div>
+            <div class="form-grupo">
+                <label for="contactoCargo">Cargo</label>
+                <input type="text" id="contactoCargo" name="cargo" autocomplete="off">
+            </div>
+            <div class="form-grupo">
+                <label for="contactoObservacion">Observación</label>
+                <input type="text" id="contactoObservacion" name="observacion" autocomplete="off">
+            </div>
+            <div class="modal-sector-footer">
+                <button type="button" class="btn btn-secundario" onclick="cerrarModalContacto()">Cancelar</button>
+                <button type="submit" id="modalContactoSubmit" class="btn btn-primario">Guardar</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+@endsection

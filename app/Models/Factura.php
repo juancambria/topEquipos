@@ -94,7 +94,7 @@ class Factura extends Model
         $iva105 = 0;
         $iva21 = 0;
 
-        foreach ($this->detalles as $detalle) {
+        foreach ($this->detalles()->get() as $detalle) {
             $subtotal = $detalle->subtotal ?? 0;
             $neto += $subtotal;
 
@@ -106,47 +106,26 @@ class Factura extends Model
             }
         }
 
-        $this->neto = $neto;
+        // Aplicar bonificación
+        $porcentajeBonificacion = $this->porcentajeBonificacion ?? 0;
+        $importeBonificacion = $neto * ($porcentajeBonificacion / 100);
+        
+        $this->porcentajeBonificacion = $porcentajeBonificacion;
+        $this->importeBonificacion = $importeBonificacion;
+        
+        $netoConBonificacion = $neto - $importeBonificacion;
+
+        $this->neto = $netoConBonificacion;
         $this->iva105 = $iva105;
         $this->iva21 = $iva21;
 
-        $descuento = $this->porcentajeDto ?? 0;
-        $this->importeDto = $neto * ($descuento / 100);
-
-        $this->total = $neto + $iva105 + $iva21 - $this->importeDto;
+        $this->total = $netoConBonificacion + $iva105 + $iva21;
 
         return $this->save();
     }
 
-    public function darDeBaja(?string $observacion = null): bool
-    {
-        $guardado = $this->update(['estado' => 'baja']);
-        
-        if ($guardado) {
-            Historial::registrar(
-                $this->idProveedor,
-                'BAJA FACTURA',
-                "Factura {$this->numero} dada de baja",
-                $observacion
-            );
-        }
-        
-        return $guardado;
-    }
-
     public function darDeAlta(): bool
     {
-        $guardado = $this->update(['estado' => 'activo']);
-        
-        if ($guardado) {
-            Historial::registrar(
-                $this->idProveedor,
-                'ALTA FACTURA',
-                "Factura {$this->numero} reactivada"
-            );
-        }
-        
-        return $guardado;
+        return $this->update(['estado' => 'activo']);
     }
 }
-

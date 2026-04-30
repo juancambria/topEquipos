@@ -5,26 +5,41 @@ namespace App\Http\Controllers;
 use App\Models\Sector;
 use App\Models\Ubicacion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class SectorController extends Controller
 {
     public function porUbicacion($id)
     {
-        // Devolver TODOS los sectores con su estado de asociación a esta ubicación
-        $todosSectores = Sector::with('ubicacion')->orderBy('nombre')->get();
-        
-        // Marcar cuáles están asociados a esta ubicación
+        $sectores = Sector::whereHas('ubicaciones', function ($query) use ($id) {
+                $query->where('ubicaciones.id', $id);
+            })
+            ->orderBy('nombre')
+            ->get();
+
+        return response()->json($sectores);
+    }
+
+    public function paraVinculacion($id)
+    {
+        $todosSectores = Sector::with('ubicaciones')->orderBy('nombre')->get();
+
         $sectores = $todosSectores->map(function ($sector) use ($id) {
-            $sector->asociado = (int) $sector->ubicacion_id === (int) $id;
-            return $sector;
-        });
+                $sector->asociado = $sector->ubicaciones->contains('id', (int) $id);
+                return $sector;
+            });
         
         return response()->json($sectores);
     }
 
     public function index(Request $request)
     {
-        $query = Sector::with('ubicacion')->activos();
+        $query = Sector::with('ubicaciones')->activos();
+
+        // Buscador solo por nombre
+        if ($search = $request->input('search')) {
+            $query->where('nombre', 'like', '%' . $search . '%');
+        }
 
         // Ordenamiento por columna
         $column = $request->input('column', 'id');
@@ -49,7 +64,7 @@ class SectorController extends Controller
 
     public function inactivos(Request $request)
     {
-        $query = Sector::with('ubicacion')->where('estado', 'baja');
+        $query = Sector::with('ubicaciones')->where('estado', 'baja');
 
         $column = $request->input('column', 'id');
         $order = $request->input('order', 'asc');
@@ -69,30 +84,154 @@ class SectorController extends Controller
         return view('sectores.index', compact('sectores', 'ubicaciones'));
     }
 
+
     public function crear(Request $request)
     {
-        $data = $request->validate([
-            'nombre'       => 'required|string|max:100',
-            'ubicacion_id' => 'required|exists:ubicaciones,id',
-        ]);
+        try {
+            $data = $request->validate([
+                'nombre' => 'required|string|max:40'
+            ]);
 
-        Sector::crear($data);
+            $nombreLimpio = trim($data['nombre']);
 
-        return redirect()->back()->with('success', 'Sector creado correctamente');
+            // Check DB constraint real (nombre + ubicacion_id?)
+            if (Sector::where('estado', 'activo')
+                ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombreLimpio)])
+                ->exists()) {
+
+                $validator = Validator::make([], []);
+                $validator->errors()->add('nombre', 'El sector ya existe');
+
+                throw new \Illuminate\Validation\ValidationException($validator);
+            }
+
+            $sector = Sector::crear(['nombre' => $nombreLimpio, 'estado' => 'activo']);
+
+if ($request->filled('ubicacion_id')) {
+    $sector->ubicaciones()->attach((int) $request->ubicacion_id);
+}
+$redirect = $request->input('redirect_to', route('sectores.index'));
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sector creado correctamente',
+                    'id' => $sector->id,
+                    'nombre' => $sector->nombre
+                ]);
+            }
+
+            return redirect($redirect)->with('success', 'Sector creado correctamente');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error interno del servidor',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+            throw $e;
+        }
     }
+
 
     public function actualizar(Request $request, $id)
     {
-        $sector = Sector::activos()->findOrFail($id);
+        try {
+            $sector = Sector::activos()->findOrFail($id);
 
-        $data = $request->validate([
-            'nombre'       => 'required|string|max:100',
-            'ubicacion_id' => 'required|exists:ubicaciones,id',
+            $nombreLimpio = trim($request->input('nombre', ''));
+
+            $data = $request->validate([
+                'nombre'       => 'required|string|max:40',
+            ]);
+
+            // Validar unique nombre (excluyendo propio ID)
+            if (Sector::where('estado', 'activo')
+                ->where('id', '!=', $id)
+                ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombreLimpio)])
+                ->exists()) {
+
+                $validator = Validator::make([], []);
+                $validator->errors()->add('nombre', 'Ya existe otro sector con ese nombre');
+
+                throw new \Illuminate\Validation\ValidationException($validator);
+            }
+
+            $sector->actualizar($data);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sector actualizado correctamente'
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Sector actualizado correctamente');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+            throw $e;
+        }
+    }
+
+    public function ubicacionesParaSector($id)
+    {
+        $sector = Sector::with('ubicaciones')->findOrFail($id);
+        $todasUbicaciones = Ubicacion::orderBy('nombre')->get();
+
+        $ubicaciones = $todasUbicaciones->map(function ($ubicacion) use ($sector) {
+            $ubicacion->asociado = $sector->ubicaciones->contains('id', $ubicacion->id);
+            return $ubicacion;
+        });
+
+        return response()->json($ubicaciones);
+    }
+
+    public function syncUbicaciones(Request $request, $id)
+    {
+        $sector = Sector::findOrFail($id);
+        $ubicacionIds = $request->input('ubicacion_ids', []);
+
+        // Validar que no hay equipos activos si se van a desvincular ubicaciones
+        $ubicacionesActuales = $sector->ubicaciones->pluck('id');
+        $ubicacionesDesvincular = array_diff($ubicacionesActuales->toArray(), $ubicacionIds);
+
+        if (!empty($ubicacionesDesvincular) && $sector->equipos()->where('estado', 'activo')->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede desvincular ubicaciones porque el sector tiene equipos activos.',
+            ], 409);
+        }
+
+        $sector->ubicaciones()->sync($ubicacionIds);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Ubicaciones actualizadas correctamente.'
         ]);
-
-        $sector->actualizar($data);
-
-        return redirect()->back()->with('success', 'Sector actualizado correctamente');
     }
 
     /** asociarSector: asocia un sector existente a una ubicación */
@@ -101,28 +240,53 @@ class SectorController extends Controller
         $data = $request->validate([
             'sector_id'    => 'required|exists:sectores,id',
             'ubicacion_id' => 'required|exists:ubicaciones,id',
+            'asociado'     => 'nullable|boolean',
         ]);
 
         $sector = Sector::findOrFail($data['sector_id']);
-        $sector->update(['ubicacion_id' => $data['ubicacion_id']]);
+        $asociado = array_key_exists('asociado', $data) ? (bool) $data['asociado'] : true;
 
-        return response()->json(['success' => true, 'message' => 'Sector asociado correctamente']);
-    }
-
-public function baja(Request $request, $id)
-    {
-        $request->validate([
-            'observacion' => 'required|string|max:1000',
-        ]);
-
-        $sector = Sector::activos()->findOrFail($id);
-
-        if (!$sector->darDeBaja($request->observacion)) {
-            return redirect()->back()
-                ->with('error', 'No se puede dar de baja el sector porque tiene equipos activos asociados');
+        if (!$asociado && $sector->equipos()->where('estado', 'activo')->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede desvincular el sector porque tiene equipos activos asociados.',
+            ], 409);
         }
 
-        return redirect()->back()->with('success', 'Sector dado de baja correctamente');
+        if ($asociado) {
+            $sector->ubicaciones()->syncWithoutDetaching([$data['ubicacion_id']]);
+        } else {
+            $sector->ubicaciones()->detach($data['ubicacion_id']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $asociado ? 'Sector asociado correctamente' : 'Sector desvinculado correctamente',
+        ]);
+    }
+
+    public function baja(Request $request, $id)
+    {
+        $sector = Sector::activos()->findOrFail($id);
+        try {
+            $sector->delete();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sector eliminado correctamente'
+                ]);
+            }
+            return redirect()->back()->with('success', 'Sector eliminado correctamente');
+        } catch (\Throwable $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede eliminar el sector porque tiene registros asociados'
+                ],409);
+            }
+            return redirect()->back()
+                ->with('error', 'No se puede eliminar el sector porque tiene registros asociados');
+        }
     }
 
     public function alta($id)
@@ -133,4 +297,3 @@ public function baja(Request $request, $id)
         return redirect()->back()->with('success', 'Sector activado correctamente');
     }
 }
-

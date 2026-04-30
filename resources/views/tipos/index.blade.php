@@ -5,17 +5,18 @@
 @endsection
 
 @section('content')
-<div class="pagina-tipos">
+<div class="page-container pagina-tipos">
     <header class="tipos-header">
-        <h1>Tipos</h1>
+        <h1>Gestión de Tipos</h1>
         <div class="tipos-toolbar">
-            <input type="search" id="buscador" class="input-buscar" placeholder="Buscar tipo..." autocomplete="off">
-            <button type="button" class="btn btn-primario" onclick="abrirModalTipo('crear')">+ Nuevo Tipo</button>
-            @if(request()->routeIs('tipos.inactivos'))
-                <a href="{{ route('tipos.index') }}" class="btn btn-primario">Ver activos</a>
-            @else
-                <a href="{{ route('tipos.inactivos') }}" class="btn btn-primario">Ver inactivos</a>
-            @endif
+            <div class="search-wrapper">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input type="search" id="searchInput" class="input-buscar" placeholder="Buscar..." autocomplete="off" value="{{ request('search') }}" aria-label="Buscar tipo">
+            </div>
+            <span id="selectedTipoInfo" class="selected-info">Ningún tipo seleccionado</span>
+            <button type="button" class="btn btn-primario tool-btn" data-toolbar-key="a" onclick="abrirModalTipo('crear')" title="Crear tipo (Alt+A)"><span class="tool-icon">➕</span><span class="tool-label"><span class="acc-k">A</span>ñadir</span></button>
+            <button type="button" id="btnEditarTipo" class="btn btn-primario tool-btn" data-toolbar-key="e" disabled title="Editar tipo seleccionado (Alt+E)"><span class="tool-icon">✏️</span><span class="tool-label"><span class="acc-k">E</span>ditar</span></button>
+            <button type="button" id="btnEliminarTipo" class="btn btn-baja tool-btn" data-toolbar-key="l" disabled title="Eliminar tipo seleccionado (Alt+L)"><span class="tool-icon">🗑️</span><span class="tool-label">E<span class="acc-k">l</span>iminar</span></button>
         </div>
     </header>
 
@@ -25,42 +26,19 @@
                 <tr>
                     <th class="sortable" data-column="idTipo" data-order="{{ request('order', 'asc') }}">
                         ID
-                        @if(request('column') == 'idTipo')
-                            <span class="sort-icon">{{ request('order', 'asc') == 'asc' ? '▲' : '▼' }}</span>
-                        @else
-                            <span class="sort-icon">↕</span>
-                        @endif
+                        @include('partials.sort-icon', ['column' => 'idTipo'])
                     </th>
                     <th class="sortable" data-column="nombreTipo" data-order="{{ request('order', 'asc') }}">
                         Nombre
-                        @if(request('column') == 'nombreTipo')
-                            <span class="sort-icon">{{ request('order', 'asc') == 'asc' ? '▲' : '▼' }}</span>
-                        @else
-                            <span class="sort-icon">↕</span>
-                        @endif
+                        @include('partials.sort-icon', ['column' => 'nombreTipo'])
                     </th>
-                    <th class="th-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($tipos as $t)
-                <tr>
+                <tr data-id="{{ $t->idTipo }}" data-nombre="{{ e($t->nombreTipo) }}">
                     <td>{{ $t->idTipo }}</td>
                     <td>{{ $t->nombreTipo }}</td>
-                    <td class="td-acciones">
-                        @if(request()->routeIs('tipos.inactivos'))
-                            <form method="POST" action="{{ route('tipos.alta', $t->idTipo) }}" class="form-inline form-alta">
-                                @csrf
-                                <button type="submit" class="btn btn-link btn-alta">Alta</button>
-                            </form>
-                        @else
-                            <button type="button" class="btn btn-link btn-editar-tipo" data-id="{{ $t->idTipo }}" data-nombre="{{ e($t->nombreTipo) }}">Editar</button>
-                            <form method="POST" action="{{ route('tipos.baja', $t->idTipo) }}" class="form-inline form-baja">
-                                @csrf
-                                <button type="submit" class="btn btn-link btn-baja">Baja</button>
-                            </form>
-                        @endif
-                    </td>
                 </tr>
                 @empty
                 <tr>
@@ -70,9 +48,13 @@
             </tbody>
         </table>
     </div>
+
+    <form id="formEliminarTipo" method="POST" style="display:none;">
+        @csrf
+    </form>
 </div>
 
-<div id="modalTipo" class="modal-overlay" aria-hidden="true">
+<div id="modalTipo" class="modal-overlay" data-modal-focus="#tipoNombre" aria-hidden="true">
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalTipoTitulo">Tipo</h2>
@@ -92,8 +74,4 @@
     </div>
 </div>
 
-@push('scripts')
-<script src="{{ asset('js/tipos.js') }}"></script>
-@endpush
 @endsection
-

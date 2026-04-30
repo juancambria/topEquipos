@@ -11,15 +11,21 @@ class ProveedorController extends Controller
     {
         $query = Proveedor::activos();
 
-        if ($request->filled('buscar')) {
-            $query->where('proveedor', 'like', '%' . $request->buscar . '%');
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('proveedor', 'like', '%' . $request->search . '%')
+                  ->orWhere('mail', 'like', '%' . $request->search . '%')
+                  ->orWhere('telefono', 'like', '%' . $request->search . '%')
+                  ->orWhere('ciudad', 'like', '%' . $request->search . '%')
+                  ->orWhere('provincia', 'like', '%' . $request->search . '%');
+            });
         }
 
         // Ordenamiento por columna
         $column = $request->input('column', 'idProveedor');
         $order = $request->input('order', 'asc');
         
-        $allowedColumns = ['idProveedor', 'proveedor', 'mail', 'ciudad', 'provincia', 'created_at'];
+        $allowedColumns = ['idProveedor', 'proveedor', 'mail', 'telefono', 'ciudad', 'provincia', 'created_at'];
         if (!in_array($column, $allowedColumns)) {
             $column = 'idProveedor';
         }
@@ -35,16 +41,22 @@ class ProveedorController extends Controller
 
     public function inactivos(Request $request)
     {
-        $query = Proveedor::where('estado', 'baja');
+$query = Proveedor::where('estado', 'baja');
 
-        if ($request->filled('buscar')) {
-            $query->where('proveedor', 'like', '%' . $request->buscar . '%');
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('proveedor', 'like', '%' . $request->search . '%')
+                  ->orWhere('mail', 'like', '%' . $request->search . '%')
+                  ->orWhere('telefono', 'like', '%' . $request->search . '%')
+                  ->orWhere('ciudad', 'like', '%' . $request->search . '%')
+                  ->orWhere('provincia', 'like', '%' . $request->search . '%');
+            });
         }
 
         $column = $request->input('column', 'idProveedor');
         $order = $request->input('order', 'asc');
         
-        $allowedColumns = ['idProveedor', 'proveedor', 'mail', 'ciudad', 'provincia', 'created_at'];
+        $allowedColumns = ['idProveedor', 'proveedor', 'mail', 'telefono', 'ciudad', 'provincia', 'created_at'];
         if (!in_array($column, $allowedColumns)) {
             $column = 'idProveedor';
         }
@@ -60,16 +72,35 @@ class ProveedorController extends Controller
 
     public function crear(Request $request)
     {
-        $data = $request->validate([
-            'proveedor'     => 'required|string|max:255|unique:proveedores,proveedor',
-            'mail'          => 'nullable|email|max:255',
-            'provincia'     => 'nullable|string|max:100',
-            'ciudad'        => 'nullable|string|max:100',
-            'codigo_postal' => 'nullable|string|max:20',
-            'direccion'     => 'nullable|string|max:255',
+        $this->mergeCleaned($request, [
+            'proveedor' => $this->cleanString($request->input('proveedor')),
+            'mail' => $this->cleanEmail($request->input('mail')),
+            'telefono' => $this->cleanString($request->input('telefono')),
+            'provincia' => $this->cleanString($request->input('provincia')),
+            'ciudad' => $this->cleanString($request->input('ciudad')),
+            'codigo_postal' => $this->cleanString($request->input('codigo_postal')),
+            'direccion' => $this->cleanString($request->input('direccion')),
         ]);
 
-        Proveedor::crear($data);
+        $data = $request->validate([
+            'proveedor'     => 'required|string|max:40|unique:proveedores,proveedor',
+            'mail'          => 'nullable|email:rfc|max:150',
+            'telefono'      => 'nullable|string|max:20',
+            'provincia'     => 'nullable|string|max:40',
+            'ciudad'        => 'nullable|string|max:40',
+            'codigo_postal' => 'nullable|string|max:20',
+            'direccion'     => 'nullable|string|max:40',
+        ]);
+
+        $proveedor = Proveedor::crear($data);
+
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'id' => $proveedor->idProveedor,
+                'message' => 'Proveedor creado correctamente'
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Proveedor creado correctamente');
     }
@@ -78,34 +109,61 @@ class ProveedorController extends Controller
     {
         $proveedor = Proveedor::activos()->where('idProveedor', $id)->firstOrFail();
 
+        $this->mergeCleaned($request, [
+            'proveedor' => $this->cleanString($request->input('proveedor')),
+            'mail' => $this->cleanEmail($request->input('mail')),
+            'telefono' => $this->cleanString($request->input('telefono')),
+            'provincia' => $this->cleanString($request->input('provincia')),
+            'ciudad' => $this->cleanString($request->input('ciudad')),
+            'codigo_postal' => $this->cleanString($request->input('codigo_postal')),
+            'direccion' => $this->cleanString($request->input('direccion')),
+        ]);
+
         $data = $request->validate([
-            'proveedor'     => 'required|string|max:255|unique:proveedores,proveedor,' . $id . ',idProveedor',
-            'mail'          => 'nullable|email|max:255',
-            'provincia'     => 'nullable|string|max:100',
-            'ciudad'        => 'nullable|string|max:100',
+            'proveedor'     => 'required|string|max:40|unique:proveedores,proveedor,' . $id . ',idProveedor',
+            'mail'          => 'nullable|email:rfc|max:150',
+            'telefono'      => 'nullable|string|max:20',
+            'provincia'     => 'nullable|string|max:40',
+            'ciudad'        => 'nullable|string|max:40',
             'codigo_postal' => 'nullable|string|max:20',
-            'direccion'     => 'nullable|string|max:255',
+            'direccion'     => 'nullable|string|max:40',
         ]);
 
         $proveedor->actualizar($data);
 
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'id' => $proveedor->idProveedor,
+                'message' => 'Proveedor actualizado correctamente'
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Proveedor actualizado correctamente');
+    }
+
+    public function apiTieneEquipos($id)
+    {
+        $tiene = \App\Models\Equipo::where('idProveedor', $id)->exists();
+        return response()->json(['tieneEquipos' => $tiene]);
     }
 
     public function baja(Request $request, $id)
     {
-        $request->validate([
-            'observacion' => 'required|string|max:1000',
-        ]);
-
-        $proveedor = Proveedor::activos()->where('idProveedor', $id)->firstOrFail();
-
-        if (!$proveedor->darDeBaja($request->observacion)) {
-            return redirect()->back()
-                ->with('error', 'No se puede dar de baja el proveedor porque tiene equipos activos asociados');
+        $proveedor = Proveedor::where('idProveedor', $id)->firstOrFail();
+        
+        // Chequeo final de equipos
+        if (\App\Models\Equipo::where('idProveedor', $id)->exists()) {
+            return redirect()->back()->with('error', 'No se puede eliminar el proveedor porque tiene equipos vinculados.');
         }
-
-        return redirect()->back()->with('success', 'Proveedor dado de baja correctamente');
+        
+        try {
+            $proveedor->delete();
+        } catch (\Throwable $e) {
+            return redirect()->back()
+                ->with('error', 'No se puede eliminar el proveedor: ' . $e->getMessage());
+        }
+        return redirect()->back()->with('success', 'Proveedor eliminado correctamente');
     }
 
     public function alta($id)
@@ -116,4 +174,3 @@ class ProveedorController extends Controller
         return redirect()->back()->with('success', 'Proveedor activado correctamente');
     }
 }
-

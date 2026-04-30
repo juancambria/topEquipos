@@ -3,23 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Sector extends Model
 {
     protected $table      = 'sectores';
     protected $primaryKey = 'id';
     public    $timestamps = false;
-    protected $fillable   = ['nombre', 'ubicacion_id', 'estado'];
+    protected $fillable   = ['nombre', 'estado'];
 
     protected $attributes = [
         'estado' => 'activo',
     ];
 
-    /** Relación: un sector pertenece a una ubicación */
-    public function ubicacion(): BelongsTo
+    /** Relación: un sector puede pertenecer a muchas ubicaciones */
+    public function ubicaciones(): BelongsToMany
     {
-        return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
+        return $this->belongsToMany(Ubicacion::class, 'sector_ubicacion', 'sector_id', 'ubicacion_id');
     }
 
     /** Scope: solo activos */
@@ -33,7 +33,6 @@ class Sector extends Model
     {
         return static::create([
             'nombre'       => $data['nombre'],
-            'ubicacion_id' => $data['ubicacion_id'],
             'estado'       => 'activo',
         ]);
     }
@@ -43,7 +42,6 @@ class Sector extends Model
     {
         return $this->fill([
             'nombre'       => $data['nombre'],
-            'ubicacion_id' => $data['ubicacion_id'],
         ])->save();
     }
 
@@ -83,4 +81,3 @@ class Sector extends Model
         return $this->hasMany(Equipo::class, 'sector_id');
     }
 }
-

@@ -23,7 +23,7 @@ class HistorialController extends Controller
             });
         }
 
-        $historial = $query->paginate(30);
+        $historial = $query->paginate(30)->withQueryString();
 
         return view('historial.index', compact('historial'));
     }
@@ -42,7 +42,7 @@ class HistorialController extends Controller
             });
         }
 
-        $historial = $query->paginate(20, ['*'], 'pagina', $request->get('pagina', 1));
+        $historial = $query->paginate(20, ['*'], 'pagina', $request->get('pagina', 1))->withQueryString();
 
         return view('historial.equipo', compact('historial', 'equipo'));
     }
@@ -61,7 +61,7 @@ class HistorialController extends Controller
             });
         }
 
-        $historial = $query->paginate(20, ['*'], 'pagina', $request->get('pagina', 1));
+        $historial = $query->paginate(20, ['*'], 'pagina', $request->get('pagina', 1))->withQueryString();
 
         return view('historial.equipo', compact('historial', 'equipo'));
     }

@@ -23,6 +23,12 @@ class Marca extends Model
         return $this->hasMany(Modelo::class, 'idMarca', 'idMarca');
     }
 
+    public function tipos()
+    {
+        return $this->belongsToMany(Tipo::class, 'marca_tipo', 'idMarca', 'idTipo')
+            ->withTimestamps();
+    }
+
     public function equipos()
     {
         return $this->hasMany(Equipo::class, 'idMarca', 'idMarca');

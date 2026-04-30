@@ -1,4 +1,4 @@
-(function() {
+ (function() {
     'use strict';
 
     // Esperar a que el DOM esté listo
@@ -11,102 +11,314 @@
     var selectMarca = document.getElementById('modeloIdMarca');
     var selectTipo = document.getElementById('modeloIdTipo');
     var submitBtn = document.getElementById('modalModeloSubmit');
+    var modeloOriginalValues = {};
+    var modeloHasChanges = false;
+    var modeloEditMode = false;
+    var modeloIsSubmitting = false;
+    
+    if (!overlay || !form) return;
+    if (form.dataset.boundBy && form.dataset.boundBy !== 'modelos') return;
+
+    function leerEstadoModelo() {
+        return {
+            modelo: inputModelo ? inputModelo.value : '',
+            idMarca: selectMarca ? selectMarca.value : '',
+            idTipo: selectTipo ? selectTipo.value : '',
+        };
+    }
+
+    function actualizarEstadoSubmitModelo() {
+        if (!submitBtn) return;
+        var actual = leerEstadoModelo();
+        var tieneDatosMinimos = !!(actual.modelo.trim() && actual.idMarca && actual.idTipo);
+
+        modeloHasChanges = Object.keys(modeloOriginalValues).some(function(key) {
+            return (actual[key] || '') !== (modeloOriginalValues[key] || '');
+        });
+        if (!modeloEditMode) {
+            submitBtn.disabled = !tieneDatosMinimos;
+            submitBtn.classList.toggle('disabled', !tieneDatosMinimos);
+            if (tieneDatosMinimos) {
+                submitBtn.removeAttribute('title');
+            } else {
+                submitBtn.title = 'Bloqueado: completa modelo, marca y tipo';
+            }
+            return;
+        }
+
+        submitBtn.disabled = !modeloHasChanges;
+        submitBtn.classList.toggle('disabled', !modeloHasChanges);
+        if (modeloHasChanges) {
+            submitBtn.removeAttribute('title');
+        } else {
+            submitBtn.title = 'Bloqueado: haz un cambio para habilitar';
+        }
+    }
+
+    async function ejecutarSubmitModelo() {
+        modeloIsSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Guardando...';
+        
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                mostrarToast('Operación completada correctamente', 'success');
+                forceCerrarModalModelo();
+                setTimeout(() => location.reload(), 1000);
+                return;
+            }
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Error en el servidor');
+            }
+            
+            mostrarToast(data.message || 'Operación completada', 'success');
+            forceCerrarModalModelo();
+            setTimeout(() => location.reload(), 1000);
+        } catch (error) {
+            mostrarToast('Error: ' + error.message, 'error');
+        } finally {
+            modeloIsSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = form.action.includes('/crear') ? 'Crear' : 'Actualizar';
+        }
+    }
+
+// AJAX para form submit - maneja HTML/JSON
+    form.dataset.boundBy = 'modelos';
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (submitBtn.disabled || modeloIsSubmitting) return;
+        var esCrear = form.action.includes('/crear');
+        var nombreActual = inputModelo ? inputModelo.value.trim() : '';
+        abrirModalConfirmacion(
+            esCrear ? 'Crear modelo' : 'Actualizar modelo',
+            esCrear
+                ? '¿Desea crear el modelo "' + nombreActual + '"?'
+                : '¿Desea actualizar el modelo a "' + nombreActual + '"?',
+            function() {
+                ejecutarSubmitModelo();
+            },
+            false
+        );
+    });
+
+    // Verificar que los elementos existen antes de usarlos
+    if (!overlay || !form) return;
+
+    function cargarMarcasPorTipo(idTipo, previousMarcaValue) {
+        if (!selectMarca) return Promise.resolve();
+
+        var url = '/marcas/api';
+        if (idTipo) {
+            url += '?idTipo=' + encodeURIComponent(idTipo);
+        }
+
+        return fetch(url)
+            .then(function(response) { return response.json(); })
+            .then(function(marcas) {
+                var previousValue = previousMarcaValue || '';
+                selectMarca.innerHTML = '<option value="">— Seleccionar marca —</option>';
+                marcas.forEach(function(marca) {
+                    var option = document.createElement('option');
+                    option.value = marca.idMarca;
+                    option.textContent = marca.marca;
+                    selectMarca.appendChild(option);
+                });
+                // Restaurar valor anterior si existe en la nueva lista
+                if (previousValue && Array.from(selectMarca.options).some(opt => opt.value === previousValue)) {
+                    selectMarca.value = previousValue;
+                }
+            });
+    }
+
+    function cargarTiposPorMarca(idMarca, previousTipoValue) {
+        if (!selectTipo) return Promise.resolve();
+
+        var url = '/tipos/api';
+        if (idMarca) {
+            url += '?idMarca=' + encodeURIComponent(idMarca);
+        }
+
+        return fetch(url)
+            .then(function(response) { return response.json(); })
+            .then(function(tipos) {
+                var previousValue = previousTipoValue || '';
+                selectTipo.innerHTML = '<option value="">— Seleccionar tipo —</option>';
+                tipos.forEach(function(tipo) {
+                    var option = document.createElement('option');
+                    option.value = tipo.idTipo;
+                    option.textContent = tipo.nombreTipo;
+                    selectTipo.appendChild(option);
+                });
+                // Restaurar valor anterior si existe en la nueva lista
+                if (previousValue && Array.from(selectTipo.options).some(opt => opt.value === previousValue)) {
+                    selectTipo.value = previousValue;
+                }
+            });
+    }
 
     window.abrirModalModelo = function(mode, id, modelo, idMarca, idTipo) {
+        if (!overlay || !form) {
+            console.error('No se encontró el modal o formulario de modelo');
+            return;
+        }
+        
         if (mode === 'crear') {
             titulo.textContent = 'Nuevo Modelo';
             form.action = '/modelos/crear';
-            inputModelo.value = '';
-            if (selectMarca.options.length) selectMarca.selectedIndex = 0;
-            selectTipo.value = '';
-            submitBtn.textContent = 'Crear';
+            if (inputModelo) inputModelo.value = '';
+            // Cargar listas completas inicialmente
+            cargarTiposPorMarca('', '');
+            cargarMarcasPorTipo('', '');
+            if (submitBtn) submitBtn.textContent = 'Crear';
+            modeloOriginalValues = {
+                modelo: '',
+                idMarca: '',
+                idTipo: '',
+            };
+            modeloHasChanges = false;
+            modeloEditMode = false;
         } else {
             titulo.textContent = 'Editar Modelo';
             form.action = '/modelos/' + id + '/actualizar';
-            inputModelo.value = modelo || '';
-            selectMarca.value = idMarca || '';
-            selectTipo.value = idTipo || '';
-            submitBtn.textContent = 'Actualizar';
+            if (inputModelo) inputModelo.value = modelo || '';
+            cargarTiposPorMarca(idMarca || '', idTipo || '');
+            cargarMarcasPorTipo(idTipo || '', idMarca || '');
+            if (submitBtn) submitBtn.textContent = 'Actualizar';
+            modeloOriginalValues = {
+                modelo: modelo || '',
+                idMarca: String(idMarca || ''),
+                idTipo: String(idTipo || ''),
+            };
+            modeloHasChanges = false;
+            modeloEditMode = true;
         }
+        setTimeout(actualizarEstadoSubmitModelo, 0);
         overlay.setAttribute('aria-hidden', 'false');
     };
 
-    window.cerrarModalModelo = function() { overlay.setAttribute('aria-hidden', 'true'); };
+    function forceCerrarModalModelo() {
+        modeloOriginalValues = {};
+        modeloHasChanges = false;
+        modeloEditMode = false;
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    window.cerrarModalModelo = function() {
+        if (modeloIsSubmitting) {
+            forceCerrarModalModelo();
+            return;
+        }
+        if (!modeloHasChanges) {
+            forceCerrarModalModelo();
+            return;
+        }
+        abrirModalConfirmacion(
+            'Cerrar modelo',
+            'Se van a perder los cambios realizados. ¿Desea continuar?',
+            forceCerrarModalModelo,
+            false
+        );
+    };
 
     overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalModelo(); });
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') cerrarModalModelo();
     });
 
-    document.querySelectorAll('.btn-editar-modelo').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            abrirModalModelo('editar', btn.dataset.id, btn.dataset.modelo, btn.dataset.idMarca, btn.dataset.idTipo);
-        });
+    var selectedModeloInfo = document.getElementById('selectedModeloInfo');
+    var btnEditarModelo = document.getElementById('btnEditarModelo');
+    var btnEliminarModelo = document.getElementById('btnEliminarModelo');
+    var formEliminarModelo = document.getElementById('formEliminarModelo');
+    var seleccion = CrudCommon.createRowSelection({
+        rowSelector: '#tablaModelos tbody tr[data-id]',
+        selectedInfo: selectedModeloInfo,
+        buttons: [btnEditarModelo, btnEliminarModelo],
+        outsideIgnoreSelectors: ['#btnEliminarModelo', '#btnEditarModelo'],
+        formatInfo: function(row) {
+            return row
+                ? 'Modelo seleccionado: ' + row.dataset.modelo + ' (ID ' + row.dataset.id + ')'
+                : 'Ningún modelo seleccionado';
+        },
+        onDoubleClick: function(row) {
+            abrirModalModelo('editar', row.dataset.id, row.dataset.modelo, row.dataset.idMarca, row.dataset.idTipo);
+        },
     });
 
-    document.getElementById('buscador')?.addEventListener('input', function() {
-        var f = this.value.toLowerCase().trim();
-        document.querySelectorAll('#tablaModelos tbody tr').forEach(function(tr) {
-            if (tr.querySelector('.td-vacio')) return;
-            tr.style.display = tr.innerText.toLowerCase().indexOf(f) >= 0 ? '' : 'none';
+    if (btnEditarModelo) {
+        btnEditarModelo.addEventListener('click', function() {
+            var row = seleccion.getSelectedRow();
+            if (!row) return;
+            abrirModalModelo('editar', row.dataset.id, row.dataset.modelo, row.dataset.idMarca, row.dataset.idTipo);
         });
-    });
+    }
 
-    /* --- Ordenar por columnas (click en headers) --- */
-    document.querySelectorAll('#tablaModelos th.sortable').forEach(function(th) {
-        th.addEventListener('click', function() {
-            var column = this.dataset.column;
-            var currentOrder = this.dataset.order;
-            var newOrder = currentOrder === 'desc' ? 'asc' : 'desc';
-            var url = new URL(window.location.href);
-            url.searchParams.set('column', column);
-            url.searchParams.set('order', newOrder);
-            window.location.href = url.toString();
+    if (btnEliminarModelo) {
+        btnEliminarModelo.addEventListener('click', function() {
+            CrudCommon.confirmSelectedRow({
+                getRow: seleccion.getSelectedRow,
+                emptyMessage: 'Selecciona un modelo válido primero',
+                alertType: 'toast',
+                title: 'Eliminar modelo',
+                message: function(row) {
+                    return '¿Estás seguro de eliminar el modelo "' + row.dataset.modelo + '"?';
+                },
+                onConfirm: function(row) {
+                    mostrarToast('Eliminando el modelo...', 'warning');
+                    formEliminarModelo.action = '/modelos/' + parseInt(row.dataset.id, 10) + '/baja';
+                    formEliminarModelo.submit();
+                },
+            });
         });
-        th.style.cursor = 'pointer';
-        th.title = 'Click para ordenar';
-    });
+    }
 
-    /* --- Botones de baja con modal de confirmación --- */
-    document.querySelectorAll('#tablaModelos .form-baja').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var btn = form.querySelector('.btn-baja');
-            var modeloNombre = btn.closest('tr').querySelector('td:nth-child(2)').textContent;
-
-            abrirModalConfirmacion(
-                'Dar de baja modelo',
-                '¿Estás seguro de dar de baja el modelo "' + modeloNombre + '"?',
-                function(observacion) {
-                    var inputObs = document.createElement('input');
-                    inputObs.type = 'hidden';
-                    inputObs.name = 'observacion';
-                    inputObs.value = observacion;
-                    form.appendChild(inputObs);
-
-                    mostrarToast('Dando de baja el modelo...', 'warning');
-                    form.submit();
-                }
-            );
+    if (selectTipo && selectTipo.dataset.modeloTipoBound !== '1') {
+        selectTipo.dataset.modeloTipoBound = '1';
+        selectTipo.addEventListener('change', function() {
+            var previousMarcaValue = selectMarca ? selectMarca.value : '';
+            cargarMarcasPorTipo(this.value, previousMarcaValue);
+            setTimeout(actualizarEstadoSubmitModelo, 0);
         });
-    });
+    }
 
-    /* --- Botón de alta con confirmación normal --- */
-    document.querySelectorAll('#tablaModelos .form-alta').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var btn = form.querySelector('.btn-alta');
-            var modeloNombre = btn.closest('tr').querySelector('td:nth-child(2)').textContent;
+    // Removido: filtrado bidireccional para evitar conflicto de valores
+    // if (selectMarca && selectMarca.dataset.modeloMarcaBound !== '1') {
+    //     selectMarca.dataset.modeloMarcaBound = '1';
+    //     selectMarca.addEventListener('change', function() {
+    //         var previousTipoValue = selectTipo ? selectTipo.value : '';
+    //         cargarTiposPorMarca(this.value, previousTipoValue);
+    //         setTimeout(actualizarEstadoSubmitModelo, 0);
+    //     });
+    // }
 
-            abrirModalConfirmacion(
-                'Activar modelo',
-                '¿Estás seguro de activar el modelo "' + modeloNombre + '"?',
-                function() {
-                    mostrarToast('Activando el modelo...', 'warning');
-                    form.submit();
-                }
-            );
-        });
+    if (inputModelo) inputModelo.addEventListener('input', actualizarEstadoSubmitModelo);
+    if (selectMarca) selectMarca.addEventListener('change', actualizarEstadoSubmitModelo);
+    if (selectTipo) selectTipo.addEventListener('change', actualizarEstadoSubmitModelo);
+
+    CrudCommon.initSearchInput();
+    CrudCommon.initSortableHeaders('#tablaModelos th.sortable');
+    CrudCommon.bindConfirmForms('#tablaModelos .form-baja', {
+        title: 'Eliminar modelo',
+        message: function(form) {
+            var modeloNombre = form.closest('tr').querySelector('td:nth-child(2)').textContent;
+            return '¿Estás seguro de eliminar el modelo "' + modeloNombre + '"?';
+        },
+        onConfirm: function(form) {
+            mostrarToast('Eliminando el modelo...', 'warning');
+            form.submit();
+        },
     });
 
     }); // Fin DOMContentLoaded

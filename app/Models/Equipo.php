@@ -13,14 +13,20 @@ class Equipo extends Model
         'idMarca',
         'idModelo',
         'idProveedor',
+        'numeroFactura',
         'serie',
         'imagen',
         'observacion',
         'vtoGarantia',
         'precio',
+        'informa_al_seguro',
         'ubicacion_id',
         'sector_id',
         'estado',
+    ];
+
+    protected $casts = [
+        'informa_al_seguro' => 'boolean',
     ];
 
     protected $attributes = [

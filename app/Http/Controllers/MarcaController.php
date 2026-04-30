@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Marca;
+use App\Models\Tipo;
 use Illuminate\Http\Request;
 
 class MarcaController extends Controller
@@ -13,23 +14,7 @@ class MarcaController extends Controller
     public function index(Request $request)
     {
         $query = Marca::activos();
-
-        if ($request->filled('buscar')) {
-            $query->where('marca', 'like', '%' . $request->buscar . '%');
-        }
-
-        // Ordenamiento por columna
-        $column = $request->input('column', 'idMarca');
-        $order = $request->input('order', 'asc');
-        
-        $allowedColumns = ['idMarca', 'marca', 'created_at'];
-        if (!in_array($column, $allowedColumns)) {
-            $column = 'idMarca';
-        }
-        
-        $order = in_array($order, ['asc', 'desc']) ? $order : 'asc';
-        
-        $query->orderBy($column, $order);
+        $this->applySearchAndSorting($request, $query, 'marca', ['idMarca', 'marca', 'created_at'], 'idMarca');
 
         $marcas = $query->get();
 
@@ -42,22 +27,7 @@ class MarcaController extends Controller
     public function inactivos(Request $request)
     {
         $query = Marca::where('estado', 'baja');
-
-        if ($request->filled('buscar')) {
-            $query->where('marca', 'like', '%' . $request->buscar . '%');
-        }
-
-        $column = $request->input('column', 'idMarca');
-        $order = $request->input('order', 'asc');
-        
-        $allowedColumns = ['idMarca', 'marca', 'created_at'];
-        if (!in_array($column, $allowedColumns)) {
-            $column = 'idMarca';
-        }
-        
-        $order = in_array($order, ['asc', 'desc']) ? $order : 'asc';
-        
-        $query->orderBy($column, $order);
+        $this->applySearchAndSorting($request, $query, 'marca', ['idMarca', 'marca', 'created_at'], 'idMarca');
 
         $marcas = $query->get();
 
@@ -65,17 +35,103 @@ class MarcaController extends Controller
     }
 
     /* =========================
+       API INDEX - Returns JSON for AJAX calls
+    ==========================*/
+    public function apiIndex(Request $request)
+    {
+        $query = Marca::activos();
+
+        if ($request->filled('idTipo')) {
+            $idTipo = (int) $request->input('idTipo');
+            $query->whereHas('tipos', function ($sub) use ($idTipo) {
+                $sub->where('tipos.idTipo', $idTipo);
+            });
+        }
+
+        if ($request->filled('buscar')) {
+            $query->where('marca', 'like', '%' . $request->buscar . '%');
+        }
+
+        $marcas = $query->orderBy('marca', 'asc')->get();
+
+        return response()->json($marcas);
+    }
+
+    /* =========================
        CREAR
     ==========================*/
     public function crear(Request $request)
     {
-        $data = $request->validate([
-            'marca' => 'required|string|max:255|unique:marcas,marca'
-        ]);
+        try {
+            $this->mergeCleaned($request, [
+                'marca' => $this->cleanUpperString($request->input('marca')),
+            ]);
 
-        Marca::crear($data);
+// Check if marca already exists (case-insensitive)
+            $marcaExistente = Marca::whereRaw('UPPER(TRIM(marca)) = UPPER(?)', [trim($request->marca)])->first();
+            if ($marcaExistente) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Marca ya existe',
+                        'existing' => [
+                            'idMarca' => $marcaExistente->idMarca,
+                            'marca' => $marcaExistente->marca
+                        ],
+                        'errors' => [
+                            'marca' => ['Esta marca ya existe']
+                        ]
+                    ], 422);
+                }
+                return back()->withErrors(['marca' => 'Esta marca ya existe']);
+            }
 
-        return redirect()->back()->with('success', 'Marca creada correctamente');
+            $data = $request->validate([
+                'marca' => 'required|string|max:40|unique:marcas,marca'
+            ]);
+            $marca = Marca::crear($data);
+
+if ($request->filled('tipo_id')) {
+    $marca->tipos()->attach((int) $request->tipo_id);
+}
+$redirect = $request->input('redirect_to');
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Marca creada correctamente',
+                    'id' => $marca->idMarca,
+                    'nombre' => $marca->marca
+                ]);
+            }
+
+            if ($redirect) {
+                return redirect($redirect)->with('success', 'Marca creada correctamente');
+            }
+
+            return redirect()->route('marcas.index', [
+                'abrirTiposMarca' => $marca->idMarca,
+                'marcaNombre' => $marca->marca,
+            ])->with('success', 'Marca creada correctamente');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error interno del servidor',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+            throw $e;
+        }
     }
 
     /* =========================
@@ -85,13 +141,65 @@ class MarcaController extends Controller
     {
         $marca = Marca::activos()->where('idMarca', $id)->firstOrFail();
 
+        $this->mergeCleaned($request, [
+            'marca' => $this->cleanUpperString($request->input('marca')),
+        ]);
+
         $data = $request->validate([
-            'marca' => 'required|string|max:255|unique:marcas,marca,' . $id . ',idMarca'
+            'marca' => 'required|string|max:40|unique:marcas,marca,' . $id . ',idMarca'
         ]);
 
         $marca->actualizar($data);
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Marca actualizada correctamente',
+                'id' => $marca->idMarca,
+                'nombre' => $marca->marca
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Marca actualizada correctamente');
+    }
+
+    public function tiposParaVinculacion($id)
+    {
+        $marca = Marca::activos()->with('tipos:idTipo')->where('idMarca', $id)->firstOrFail();
+        $tiposAsociados = $marca->tipos->pluck('idTipo')->all();
+
+        $tipos = Tipo::activos()
+            ->orderBy('nombreTipo')
+            ->get(['idTipo', 'nombreTipo'])
+            ->map(function ($tipo) use ($tiposAsociados) {
+                return [
+                    'idTipo' => $tipo->idTipo,
+                    'nombreTipo' => $tipo->nombreTipo,
+                    'asociado' => in_array($tipo->idTipo, $tiposAsociados, true),
+                ];
+            })
+            ->values();
+
+        return response()->json($tipos);
+    }
+
+    public function asociarTipo(Request $request)
+    {
+        $data = $request->validate([
+            'idMarca' => 'required|exists:marcas,idMarca',
+            'idTipo' => 'required|exists:tipos,idTipo',
+            'asociado' => 'required|boolean',
+        ]);
+
+        $marca = Marca::findOrFail($data['idMarca']);
+
+        if ((bool) $data['asociado']) {
+            $marca->tipos()->syncWithoutDetaching([$data['idTipo']]);
+        } else {
+            $marca->tipos()->detach($data['idTipo']);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /* =========================
@@ -99,17 +207,13 @@ class MarcaController extends Controller
     ==========================*/
     public function baja(Request $request, $id)
     {
-        $request->validate([
-            'observacion' => 'required|string|max:1000',
-        ]);
-
         $marca = Marca::activos()->where('idMarca', $id)->firstOrFail();
-
-        if (! $marca->darDeBaja($request->observacion)) {
-            return redirect()->back()->with('error', 'No se puede dar de baja la marca porque tiene modelos activos asociados');
+        try {
+            $marca->delete();
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'No se puede eliminar la marca porque tiene registros asociados.');
         }
-
-        return redirect()->back()->with('success', 'Marca dada de baja correctamente');
+        return redirect()->back()->with('success', 'Marca eliminada correctamente');
     }
 
     /* =========================
@@ -123,4 +227,3 @@ class MarcaController extends Controller
         return redirect()->back()->with('success', 'Marca activada correctamente');
     }
 }
-

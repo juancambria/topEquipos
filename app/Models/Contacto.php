@@ -13,6 +13,8 @@ class Contacto extends Model
         'nombre',
         'idProveedor',
         'telefono',
+        'mail',
+        'observacion',
         'cargo',
         'estado',
     ];
@@ -47,26 +49,9 @@ class Contacto extends Model
         return $this->update($data);
     }
 
-public function darDeBaja(?string $observacion = null): bool
-    {
-        $guardado = $this->update(['estado' => 'baja']);
-        
-        if ($guardado) {
-            Historial::registrar($this->id, 'BAJA', 'Contacto dado de baja', $observacion);
-        }
-        
-        return $guardado;
-    }
-
     public function darDeAlta(): bool
     {
-        $guardado = $this->update(['estado' => 'activo']);
-        
-        if ($guardado) {
-            Historial::registrar($this->id, 'ALTA', 'Contacto dado de alta');
-        }
-        
-        return $guardado;
+        return $this->update(['estado' => 'activo']);
     }
 }
 

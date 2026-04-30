@@ -3,59 +3,62 @@
 @section('title', 'Facturas')
 
 @section('content')
-<div class="facturas-container">
-    <!-- Header -->
-    <div class="page-header">
-        <h1>Gestion de Facturas</h1>
-        <button class="btn btn-primary" onclick="abrirModalCrear()">
-            <i class="fas fa-plus"></i> Nueva Factura
-        </button>
+<div class="page-container facturas-container" data-es-vista-inactivos="{{ $esVistaInactivos ? '1' : '0' }}">
+    <!-- Contenedor para datos de sesión de equipos por crear -->
+    @if(session('equiposPorCrear'))
+    <div id="datos-equipos" 
+         data-equipos="{{ htmlspecialchars(json_encode(session('equiposPorCrear')), ENT_QUOTES, 'UTF-8') }}" 
+         data-factura="{{ session('idFactura') }}"
+         data-proveedor="{{ session('idProveedor') }}"
+         style="display: none;">
     </div>
-
-    <!-- Filtros -->
-    <div class="filters-card">
-        <form method="GET" action="{{ route('facturas.index') }}" class="filters-form">
-            <div class="filter-group">
-                <label for="proveedor">Proveedor:</label>
-                <select name="proveedor" id="proveedor" onchange="this.form.submit()">
-                    <option value="">Todos los proveedores</option>
-                    @foreach($proveedores as $proveedor)
-                        <option value="{{ $proveedor->idProveedor }}" 
-                            {{ request('proveedor') == $proveedor->idProveedor ? 'selected' : '' }}>
-                            {{ $proveedor->proveedor }}
-                        </option>
-                    @endforeach
-                </select>
+    @endif
+    
+    <header class="facturas-header">
+        <h1>{{ $esVistaInactivos ? 'Facturas Inactivas' : 'Gestión de Facturas' }}</h1>
+        <div class="facturas-toolbar">
+            <div class="search-wrapper">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input type="search" id="buscar" name="buscar" class="input-buscar"
+                    placeholder="Buscar número, proveedor u observación..."
+                    autocomplete="off"
+                    value="{{ request('buscar') }}"
+                    aria-label="Buscar factura">
             </div>
-            <div class="filter-group">
-                <label for="buscar">Buscar:</label>
-                <input type="text" name="buscar" id="buscar" 
-                    placeholder="Numero u observacion..." 
-                    value="{{ request('buscar') }}">
-            </div>
-            <div class="filter-group">
-                <label for="column">Ordenar por:</label>
-                <select name="column" id="column" onchange="this.form.submit()">
-                    <option value="idFactura" {{ request('column') == 'idFactura' ? 'selected' : '' }}>ID</option>
-                    <option value="numero" {{ request('column') == 'numero' ? 'selected' : '' }}>Numero</option>
-                    <option value="fecha" {{ request('column') == 'fecha' ? 'selected' : '' }}>Fecha</option>
-                    <option value="total" {{ request('column') == 'total' ? 'selected' : '' }}>Total</option>
-                    <option value="created_at" {{ request('column') == 'created_at' ? 'selected' : '' }}>Creado</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="order">Sentido:</label>
-                <select name="order" id="order" onchange="this.form.submit()">
-                    <option value="asc" {{ request('order') == 'asc' ? 'selected' : '' }}>Ascendente</option>
-                    <option value="desc" {{ request('order') == 'desc' ? 'selected' : '' }}>Descendente</option>
-                </select>
-            </div>
-            <div class="filter-actions">
-                <a href="{{ route('facturas.index') }}" class="btn btn-secondary">Limpiar</a>
-                <a href="{{ route('facturas.inactivos') }}" class="btn btn-warning">Ver Inactivos</a>
-            </div>
-        </form>
-    </div>
+            <select name="proveedor" id="proveedor" class="select-filtro" onchange="window.facturasApplyToolbarFilters()">
+                <option value="">Todos los proveedores</option>
+                @foreach($proveedores as $proveedor)
+                    <option value="{{ $proveedor->idProveedor }}"
+                        {{ request('proveedor') == $proveedor->idProveedor ? 'selected' : '' }}>
+                        {{ $proveedor->proveedor }}
+                    </option>
+                @endforeach
+            </select>
+            <span id="selectedFacturaInfo" class="selected-info">Ninguna factura seleccionada</span>
+            @if($esVistaInactivos)
+                <a href="{{ route('facturas.index') }}" class="btn btn-primario tool-btn" title="Volver a facturas activas">Facturas activas</a>
+            @else
+                <a href="{{ route('facturas.inactivos') }}" class="btn btn-primario tool-btn" title="Ver facturas dadas de baja">Facturas inactivas</a>
+            @endif
+            @unless($esVistaInactivos)
+                <button type="button" class="btn btn-primario tool-btn" data-toolbar-key="a" onclick="confirmarAbrirCrearFactura()" title="Crear factura (Alt+A)">
+                    <span class="tool-icon">➕</span><span class="tool-label"><span class="acc-k">A</span>ñadir</span>
+                </button>
+            @endunless
+            <button type="button" id="btnVerDetalleFactura" class="btn btn-primario tool-btn" data-toolbar-key="d" disabled title="Detalle (Alt+D)">
+                <span class="tool-icon">📄</span><span class="tool-label"><span class="acc-k">D</span>etalle</span>
+            </button>
+            @unless($esVistaInactivos)
+                <button type="button" id="btnBajaFacturaToolbar" class="btn btn-baja tool-btn" data-toolbar-key="l" disabled title="Dar de baja factura (Alt+L)">
+                    <span class="tool-icon">🗑️</span><span class="tool-label"><span class="acc-k">B</span>aja</span>
+                </button>
+            @else
+                <button type="button" id="btnAltaFactura" class="btn btn-primario tool-btn" data-toolbar-key="r" disabled title="Reactivar factura (Alt+R)">
+                    <span class="tool-icon">↩️</span><span class="tool-label"><span class="acc-k">R</span>eactivar</span>
+                </button>
+            @endunless
+        </div>
+    </header>
 
     <!-- Tabla de Facturas -->
     <div class="table-container">
@@ -63,76 +66,62 @@
             <table class="data-table" id="tablaFacturas">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Numero</th>
-                        <th>Fecha</th>
-                        <th>Proveedor</th>
-                        <th>Neto</th>
-                        <th>IVA 10.5%</th>
-                        <th>IVA 21%</th>
-                        <th>Total</th>
-                        <th>Observacion</th>
-                        <th>Acciones</th>
+                        <th class="sortable" data-column="idFactura" data-order="{{ request('order', 'desc') }}">
+                            ID
+                            @if(request('column') == 'idFactura')
+                                <span class="sort-icon">{{ request('order', 'desc') == 'desc' ? '▼' : '▲' }}</span>
+                            @else
+                                <span class="sort-icon">↕</span>
+                            @endif
+                        </th>
+                        <th class="sortable" data-column="numero" data-order="{{ request('order', 'desc') }}">
+                            Numero
+                            @if(request('column') == 'numero')
+                                <span class="sort-icon">{{ request('order', 'desc') == 'desc' ? '▼' : '▲' }}</span>
+                            @else
+                                <span class="sort-icon">↕</span>
+                            @endif
+                        </th>
+                        <th class="sortable" data-column="fecha" data-order="{{ request('order', 'desc') }}">
+                            Fecha
+                            @if(request('column') == 'fecha')
+                                <span class="sort-icon">{{ request('order', 'desc') == 'desc' ? '▼' : '▲' }}</span>
+                            @else
+                                <span class="sort-icon">↕</span>
+                            @endif
+                        </th>
+                        <th>
+                            Proveedor
+                        </th>
+
+                        <th class="sortable" data-column="total" data-order="{{ request('order', 'desc') }}">
+                            Total
+                            @if(request('column') == 'total')
+                                <span class="sort-icon">{{ request('order', 'desc') == 'desc' ? '▼' : '▲' }}</span>
+                            @else
+                                <span class="sort-icon">↕</span>
+                            @endif
+                        </th>
+                        <th>
+                            Observacion
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($facturas as $factura)
-                        <tr>
+                        <tr
+                            data-id="{{ $factura->idFactura }}"
+                            data-numero="{{ e($factura->numero) }}"
+                            data-proveedor="{{ e($factura->proveedor->proveedor ?? 'N/A') }}"
+                            data-estado="{{ e($factura->estado) }}"
+                            ondblclick="verDetalles({{ $factura->idFactura }})">
                             <td>{{ $factura->idFactura }}</td>
                             <td><strong>{{ $factura->numero }}</strong></td>
                             <td>{{ $factura->fecha ? $factura->fecha->format('d/m/Y') : '-' }}</td>
                             <td>{{ $factura->proveedor->proveedor ?? 'N/A' }}</td>
-                            <td class="text-right">{{ number_format($factura->neto ?? 0, 2, ',', '.') }}</td>
-                            <td class="text-right">{{ number_format($factura->iva105 ?? 0, 2, ',', '.') }}</td>
-                            <td class="text-right">{{ number_format($factura->iva21 ?? 0, 2, ',', '.') }}</td>
+
                             <td class="text-right"><strong>{{ number_format($factura->total ?? 0, 2, ',', '.') }}</strong></td>
                             <td>{{ Str::limit($factura->observacion, 30) }}</td>
-                            <td class="actions-cell">
-                                <button class="btn-icon btn-view btn-action" 
-                                    data-id="{{ $factura->idFactura }}"
-                                    data-action="detalles"
-                                    title="Ver detalles">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn-icon btn-edit btn-action"
-                                    data-id="{{ $factura->idFactura }}"
-                                    data-action="editar"
-                                    title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                @if($factura->estado === 'activo')
-                                    <button class="btn-icon btn-delete btn-action"
-                                        data-id="{{ $factura->idFactura }}"
-                                        data-numero="{{ $factura->numero }}"
-                                        data-action="baja"
-                                        title="Dar de baja">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                @else           
-                                    <button class="btn-icon btn-success btn-action"
-                                        data-id="{{ $factura->idFactura }}"
-                                        data-numero="{{ $factura->numero }}"
-                                        data-action="alta"
-                                        title="Reactivar">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                @endif
-                            </td>
-
-                            <script>
-                            document.querySelectorAll('.btn-action').forEach(btn => {
-                                btn.addEventListener('click', function() {
-                                    const id = this.dataset.id;
-                                    const numero = this.dataset.numero;
-                                    const action = this.dataset.action;
-
-                                    if (action === 'detalles') verDetalles(id);
-                                    else if (action === 'editar') abrirModalEditar(id);
-                                    else if (action === 'baja') abrirModalBaja(id, numero);
-                                    else if (action === 'alta') abrirModalAlta(id, numero);
-                                });
-                            });
-                            </script>
                         </tr>
                     @endforeach
                 </tbody>
@@ -149,4 +138,5 @@
 
 <!-- Incluir modales -->
 @include('facturas.modales')
+
 @endsection

@@ -9,6 +9,82 @@
     var titulo = document.getElementById('modalTipoTitulo');
     var inputNombre = document.getElementById('tipoNombre');
     var submitBtn = document.getElementById('modalTipoSubmit');
+    var tipoOriginalNombre = '';
+    var tipoHasChanges = false;
+    var tipoEditMode = false;
+    var tipoIsSubmitting = false;
+
+    if (!overlay || !form) return;
+    if (form.dataset.boundBy && form.dataset.boundBy !== 'tipos') return;
+    form.dataset.boundBy = 'tipos';
+
+    function actualizarEstadoSubmitTipo() {
+        if (!submitBtn) return;
+        if (!tipoEditMode) {
+            tipoHasChanges = inputNombre.value.trim() !== '';
+            submitBtn.disabled = !tipoHasChanges;
+            submitBtn.classList.toggle('disabled', !tipoHasChanges);
+            if (tipoHasChanges) {
+                submitBtn.removeAttribute('title');
+            } else {
+                submitBtn.title = 'Bloqueado: completa el nombre para habilitar';
+            }
+            return;
+        }
+
+        tipoHasChanges = inputNombre.value.trim() !== tipoOriginalNombre.trim();
+        submitBtn.disabled = !tipoHasChanges;
+        submitBtn.classList.toggle('disabled', !tipoHasChanges);
+        if (tipoHasChanges) {
+            submitBtn.removeAttribute('title');
+        } else {
+            submitBtn.title = 'Bloqueado: haz un cambio para habilitar';
+        }
+    }
+
+    async function ejecutarSubmitTipo() {
+        tipoIsSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Guardando...';
+        
+        try {
+            const formData = new FormData(form);
+            formData.append('_token', CrudCommon.getCsrfToken());
+            await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+            // mostrarToast('Operación completada correctamente', 'success');
+            forceCerrarModalTipo();
+        } catch (error) {
+            console.error('Submit error:', error);
+            mostrarToast('Error al guardar', 'error');
+        } finally {
+            tipoIsSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = form.action.includes('/crear') ? 'Crear' : 'Actualizar';
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+
+    // AJAX para form submit - SOLO fallback toast + refresh
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (submitBtn.disabled || tipoIsSubmitting) return;
+        var esCrear = form.action.includes('/crear');
+        var nombreActual = inputNombre.value.trim();
+
+        abrirModalConfirmacion(
+            esCrear ? 'Crear tipo' : 'Actualizar tipo',
+            esCrear
+                ? '¿Desea crear el tipo "' + nombreActual + '"?'
+                : '¿Desea actualizar el tipo a "' + nombreActual + '"?',
+            function() {
+                ejecutarSubmitTipo();
+            },
+            false
+        );
+    });
 
     window.abrirModalTipo = function(mode, id, nombre) {
         if (mode === 'crear') {
@@ -16,89 +92,112 @@
             form.action = '/tipos/crear';
             inputNombre.value = '';
             submitBtn.textContent = 'Crear';
+            tipoOriginalNombre = '';
+            tipoHasChanges = false;
+            tipoEditMode = false;
         } else {
             titulo.textContent = 'Editar Tipo';
             form.action = '/tipos/' + id + '/actualizar';
             inputNombre.value = nombre || '';
             submitBtn.textContent = 'Actualizar';
+            tipoOriginalNombre = nombre || '';
+            tipoHasChanges = false;
+            tipoEditMode = true;
         }
+        actualizarEstadoSubmitTipo();
         overlay.setAttribute('aria-hidden', 'false');
     };
 
-    window.cerrarModalTipo = function() { overlay.setAttribute('aria-hidden', 'true'); };
+    function forceCerrarModalTipo() {
+        tipoOriginalNombre = '';
+        tipoHasChanges = false;
+        tipoEditMode = false;
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    window.cerrarModalTipo = function() {
+        if (tipoIsSubmitting) {
+            forceCerrarModalTipo();
+            return;
+        }
+        if (!tipoHasChanges) {
+            forceCerrarModalTipo();
+            return;
+        }
+        abrirModalConfirmacion(
+            'Cerrar tipo',
+            'Se van a perder los cambios realizados. ¿Desea continuar?',
+            forceCerrarModalTipo,
+            false
+        );
+    };
+
+    inputNombre.addEventListener('input', actualizarEstadoSubmitTipo);
 
     overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalTipo(); });
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') cerrarModalTipo();
     });
 
-    document.querySelectorAll('.btn-editar-tipo').forEach(function(btn) {
-        btn.addEventListener('click', function() { abrirModalTipo('editar', btn.dataset.id, btn.dataset.nombre); });
+    var btnEliminarTipo = document.getElementById('btnEliminarTipo');
+    var formEliminarTipo = document.getElementById('formEliminarTipo');
+    var selectedTipoInfo = document.getElementById('selectedTipoInfo');
+
+    var btnEditarTipo = document.getElementById('btnEditarTipo');
+    var seleccion = CrudCommon.createRowSelection({
+        rowSelector: '#tablaTipos tbody tr[data-id]',
+        selectedInfo: selectedTipoInfo,
+        buttons: [btnEliminarTipo, btnEditarTipo],
+        outsideIgnoreSelectors: ['#btnEliminarTipo', '#btnEditarTipo'],
+        formatInfo: function(row) {
+            return row
+                ? 'Tipo seleccionado: ' + row.dataset.nombre + ' (ID ' + row.dataset.id + ')'
+                : 'Ningún tipo seleccionado';
+        },
+        onDoubleClick: function(row) {
+            abrirModalTipo('editar', row.dataset.id, row.dataset.nombre);
+        },
     });
 
-    document.getElementById('buscador')?.addEventListener('input', function() {
-        var f = this.value.toLowerCase().trim();
-        document.querySelectorAll('#tablaTipos tbody tr').forEach(function(tr) {
-            if (tr.querySelector('.td-vacio')) return;
-            tr.style.display = tr.innerText.toLowerCase().indexOf(f) >= 0 ? '' : 'none';
+    if (btnEditarTipo) {
+        btnEditarTipo.addEventListener('click', function() {
+            var row = seleccion.getSelectedRow();
+            if (!row) return;
+            abrirModalTipo('editar', row.dataset.id, row.dataset.nombre);
         });
-    });
+    }
 
-    /* --- Ordenar por columnas (click en headers) --- */
-    document.querySelectorAll('#tablaTipos th.sortable').forEach(function(th) {
-        th.addEventListener('click', function() {
-            var column = this.dataset.column;
-            var currentOrder = this.dataset.order;
-            var newOrder = currentOrder === 'desc' ? 'asc' : 'desc';
-            var url = new URL(window.location.href);
-            url.searchParams.set('column', column);
-            url.searchParams.set('order', newOrder);
-            window.location.href = url.toString();
+    if (btnEliminarTipo) {
+        btnEliminarTipo.addEventListener('click', function() {
+            CrudCommon.confirmSelectedRow({
+                getRow: seleccion.getSelectedRow,
+                emptyMessage: 'Selecciona un tipo válido primero',
+                alertType: 'toast',
+                title: 'Eliminar tipo',
+                message: function(row) {
+                    return '¿Estás seguro de eliminar el tipo "' + row.dataset.nombre + '"?';
+                },
+                onConfirm: function(row) {
+                    mostrarToast('Eliminando el tipo...', 'warning');
+                    formEliminarTipo.action = '/tipos/' + parseInt(row.dataset.id, 10) + '/baja';
+                    formEliminarTipo.submit();
+                },
+            });
         });
-        th.style.cursor = 'pointer';
-        th.title = 'Click para ordenar';
-    });
+    }
 
-    /* --- Botones de baja con modal de confirmación --- */
-    document.querySelectorAll('#tablaTipos .form-baja').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var btn = form.querySelector('.btn-baja');
-            var tipoNombre = btn.closest('tr').querySelector('td:nth-child(2)').textContent;
-
-            abrirModalConfirmacion(
-                'Dar de baja tipo',
-                '¿Estás seguro de dar de baja el tipo "' + tipoNombre + '"?',
-                function(observacion) {
-                    var inputObs = document.createElement('input');
-                    inputObs.type = 'hidden';
-                    inputObs.name = 'observacion';
-                    inputObs.value = observacion;
-                    form.appendChild(inputObs);
-
-                    mostrarToast('Dando de baja el tipo...', 'warning');
-                    form.submit();
-                }
-            );
-        });
-    });
-
-    /* --- Botón de alta con confirmación normal --- */
-    document.querySelectorAll('#tablaTipos .form-alta').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var btn = form.querySelector('.btn-alta');
-            var tipoNombre = btn.closest('tr').querySelector('td:nth-child(2)').textContent;
-
-            abrirModalConfirmacion(
-                'Activar tipo',
-                '¿Estás seguro de activar el tipo "' + tipoNombre + '"?',
-                function() {
-                    mostrarToast('Activando el tipo...', 'warning');
-                    form.submit();
-                }
-            );
-        });
+    CrudCommon.initSearchInput();
+    CrudCommon.initSortableHeaders('#tablaTipos th.sortable');
+    CrudCommon.bindConfirmForms('#tablaTipos .form-baja', {
+        title: 'Eliminar tipo',
+        message: function(form) {
+            var tipoNombre = form.closest('tr').querySelector('td:nth-child(2)').textContent;
+            return '¿Estás seguro de eliminar el tipo "' + tipoNombre + '"?';
+        },
+        onConfirm: function(form) {
+            mostrarToast('Eliminando el tipo...', 'warning');
+            form.submit();
+        },
     });
 
     }); // Fin DOMContentLoaded

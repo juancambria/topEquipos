@@ -3,9 +3,18 @@
     font-family: Tahoma, Arial, sans-serif;
 }
 
+html,
+body {
+    height: 100%;
+}
+
 body {
     margin: 0;
     background: #cfcfcf;
+}
+
+body.window-embedded {
+    background: #f3f3f3;
 }
 
 .app {
@@ -15,100 +24,606 @@ body {
 }
 
 .topbar {
-    background: #2f2f2f;
+    background: linear-gradient(180deg, #373737 0%, #242424 100%);
     color: #fff;
     padding: 6px 12px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #111;
+}
+
+.topbar-brand {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 0 0 auto;
+}
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.app-nav-link,
+.app-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    border: none;
+    background: transparent;
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+
+}
+
+.app-nav-link:hover,
+.app-menu-toggle:hover,
+.app-menu.is-open .app-menu-toggle {
+    background: transparent;
+    text-shadow: 0 0 6px rgba(255,255,255,0.6);
+}
+
+.app-menu {
+    position: relative;
+}
+
+.app-menu-toggle {
+    cursor: pointer;
+}
+
+.app-menu-arrow {
+    font-size: 10px;
+}
+
+.app-menu-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 180px;
+    display: none;
+    flex-direction: column;
+    padding: 8px;
+    border: 1px solid #2f2f2f;
+    border-radius: 12px;
+    background: rgba(39, 39, 39, 0.98);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+    z-index: 1200;
+}
+
+.app-menu.is-open .app-menu-panel {
+    display: flex;
+}
+
+.app-menu-panel a {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: #f1f1f1;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.app-menu-panel a:hover,
+.app-menu-panel a.sidebar-link-open {
+    background: rgba(255,255,255,0.12);
+}
+
+.topbar-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    position: relative;
+    padding-left: 0px;
+    margin-left: 0px;
+}
+
+/* .topbar-shortcuts::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 1px;
+    height: 28px;
+    background: rgba(255,255,255,0.24);
+    transform: translateY(-50%);
+} */
+
+.topbar-shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid #525252;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #4c4c4c 0%, #313131 100%);
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.topbar-shortcut:hover {
+    background: linear-gradient(180deg, #666 0%, #3c3c3c 100%);
+}
+
+.topbar-shortcut-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.12);
+    font-size: 13px;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    margin-left: auto;
 }
 
 .main {
     flex: 1;
     display: flex;
-}
-
-.sidebar {
-    width: 180px;
-    background: #e4e4e4;
-    border-right: 1px solid #999;
-    padding: 5px;
-}
-
-.sidebar a {
-    display: block;
-    padding: 6px;
-    margin-bottom: 4px;
-    background: #d6d6d6;
-    color: #000;
-    text-decoration: none;
-    border: 1px solid #aaa;
-}
-
-.sidebar a:hover {
-    background: #bcbcbc;
-}
-
-/* Estilos para grupos colapsables del sidebar */
-.sidebar-group {
-    margin-bottom: 4px;
-}
-
-.sidebar-group-btn {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 6px;
-    background: #4a4a4a;
-    color: #fff;
-    border: 1px solid #333;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 13px;
-}
-
-.sidebar-group-btn:hover {
-    background: #5a5a5a;
-}
-
-.sidebar-group-btn .arrow {
-    font-size: 10px;
-    transition: transform 0.3s ease;
-}
-
-.sidebar-group-btn.collapsed .arrow {
-    transform: rotate(-90deg);
-}
-
-.sidebar-group-content {
-    max-height: 500px;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-}
-
-.sidebar-group-content.collapsed {
-    max-height: 0;
-}
-
-.sidebar-group-content a {
-    display: block;
-    padding: 6px 20px 6px 24px;
-    margin-bottom: 2px;
-    background: #c5c5c5;
-    color: #000;
-    text-decoration: none;
-    border: 1px solid #aaa;
-    font-size: 12px;
-}
-
-.sidebar-group-content a:hover {
-    background: #a8a8a8;
+    min-height: 0;
 }
 
 .content {
     flex: 1;
-    padding: 10px;
-    background: #f5f5f5;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.desktop-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background:
+        radial-gradient(circle at top, rgba(255,255,255,0.28), transparent 36%),
+        linear-gradient(180deg, #7d7d7d 0%, #585858 100%);
+}
+
+.desktop-area {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 12px;
+}
+
+.desktop-area[data-is-home="true"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.embedded-page {
+    height: 100%;
+    min-height: 100vh;
+    padding: 0;
+}
+
+.embedded-page > .page-container,
+.embedded-page > .dashboard-home {
+    margin: 0;
+}
+
+body.window-embedded .page-container,
+body.window-embedded .page-container.pagina-equipos,
+body.window-embedded .page-container.facturas-container,
+body.window-embedded .page-container.pagina-proveedores,
+body.window-embedded .page-container.pagina-contactos,
+body.window-embedded .page-container.pagina-ubicaciones,
+body.window-embedded .page-container.pagina-modelos,
+body.window-embedded .page-container.pagina-tipos,
+body.window-embedded .page-container.pagina-marcas {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.app-window {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    min-width: 520px;
+    min-height: 320px;
+    background: #f7f7f7;
+    border: 1px solid #2b2b2b;
+    border-radius: 14px 14px 10px 10px;
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    will-change: width, height, left, top;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.app-window.is-focused {
+    box-shadow: 0 24px 42px rgba(0, 0, 0, 0.36);
+}
+
+.app-window.is-minimized {
+    display: none;
+}
+
+.app-window.is-maximized {
+    border-radius: 16px;
+}
+
+.app-window.has-modal-lock {
+    z-index: 9999 !important;
+}
+
+.app-window.is-blocked-by-modal {
+    pointer-events: none;
+    opacity: 0.72;
+}
+
+body.has-modal-lock .app-nav,
+body.has-modal-lock .topbar-shortcuts,
+body.has-modal-lock .taskbar {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.window-titlebar {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 10px 0 14px;
+    background: linear-gradient(180deg, #fafafa 0%, #d8d8d8 100%);
+    border-bottom: 1px solid #aeaeae;
+    cursor: grab;
+    user-select: none;
+}
+
+.window-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1c1c1c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.window-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.window-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #939393;
+    border-radius: 8px;
+    background: #ececec;
+    color: #111;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.window-btn:hover {
+    background: #d9d9d9;
+}
+
+.window-btn:disabled,
+.window-btn:disabled:hover,
+.window-resize-handle:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #ececec;
+}
+
+.window-btn.is-close {
+    color: #7f0000;
+}
+
+.window-btn.is-close:hover {
+    background: #d9534f;
+    color: #fff;
+    border-color: #9f2f2d;
+}
+
+.window-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.app-window.has-modal-lock .window-body {
+    overflow: hidden;
+}
+
+.window-page-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 100%;
     overflow: auto;
+}
+
+.window-page-content.page-container {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.window-page-content.dashboard-home {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 32px;
+    text-align: center;
+    background: linear-gradient(180deg, #6f6f6f 0%, #515151 100%);
+}
+
+.window-frame {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    background: #fff;
+}
+
+.app-window.is-resizing {
+    user-select: none;
+}
+
+.app-window.is-resizing .window-frame {
+    pointer-events: none;
+}
+
+.window-resize-handle {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    background:
+        linear-gradient(135deg, transparent 0 52%, #8f8f8f 52% 60%, transparent 60% 70%, #8f8f8f 70% 78%, transparent 78%);
+    cursor: nwse-resize;
+}
+
+.taskbar {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    background: linear-gradient(180deg, #3a3a3a 0%, #1f1f1f 100%);
+    border-top: 1px solid #121212;
+}
+
+.taskbar-windows {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.taskbar-item {
+    min-width: 160px;
+    max-width: 220px;
+    height: 38px;
+    border: 1px solid #0f0f0f;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #686868 0%, #3f3f3f 100%);
+    color: #fff;
+    text-align: left;
+    padding: 0 12px;
+}
+
+.taskbar-item:hover,
+.taskbar-item.is-active {
+    background: linear-gradient(180deg, #8a8a8a 0%, #555 100%);
+}
+
+.taskbar-item.is-minimized {
+    opacity: 0.78;
+}
+
+.taskbar-item-label {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.app-window.is-compact :is(
+    .equipos-toolbar,
+    .facturas-toolbar,
+    .marcas-toolbar,
+    .tipos-toolbar,
+    .modelos-toolbar,
+    .proveedores-toolbar,
+    .contactos-toolbar,
+    .ubicaciones-toolbar,
+    .sectores-toolbar,
+    .historial-toolbar
+) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.app-window.is-compact :is(
+    .equipos-toolbar,
+    .facturas-toolbar,
+    .marcas-toolbar,
+    .tipos-toolbar,
+    .modelos-toolbar,
+    .proveedores-toolbar,
+    .contactos-toolbar,
+    .ubicaciones-toolbar,
+    .sectores-toolbar,
+    .historial-toolbar
+) .search-wrapper {
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+}
+
+.app-window.is-compact :is(
+    .equipos-toolbar,
+    .facturas-toolbar,
+    .marcas-toolbar,
+    .tipos-toolbar,
+    .modelos-toolbar,
+    .proveedores-toolbar,
+    .contactos-toolbar,
+    .ubicaciones-toolbar,
+    .sectores-toolbar,
+    .historial-toolbar
+) .selected-info {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+    margin-right: 0;
+    order: 99;
+}
+
+.app-window.is-compact :is(
+    .equipos-toolbar,
+    .facturas-toolbar,
+    .marcas-toolbar,
+    .tipos-toolbar,
+    .modelos-toolbar,
+    .proveedores-toolbar,
+    .contactos-toolbar,
+    .ubicaciones-toolbar,
+    .sectores-toolbar,
+    .historial-toolbar
+) .tool-btn,
+.app-window.is-compact :is(
+    .equipos-toolbar,
+    .facturas-toolbar,
+    .marcas-toolbar,
+    .tipos-toolbar,
+    .modelos-toolbar,
+    .proveedores-toolbar,
+    .contactos-toolbar,
+    .ubicaciones-toolbar,
+    .sectores-toolbar,
+    .historial-toolbar
+) .btn {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.app-window.is-tight :is(
+    .equipos-toolbar,
+    .facturas-toolbar,
+    .marcas-toolbar,
+    .tipos-toolbar,
+    .modelos-toolbar,
+    .proveedores-toolbar,
+    .contactos-toolbar,
+    .ubicaciones-toolbar,
+    .sectores-toolbar,
+    .historial-toolbar
+) .tool-btn {
+    min-width: 38px;
+    padding: 0 8px;
+}
+
+.app-window.is-tight :is(
+    .equipos-toolbar,
+    .facturas-toolbar,
+    .marcas-toolbar,
+    .tipos-toolbar,
+    .modelos-toolbar,
+    .proveedores-toolbar,
+    .contactos-toolbar,
+    .ubicaciones-toolbar,
+    .sectores-toolbar,
+    .historial-toolbar
+) .tool-btn .tool-label {
+    display: none;
+}
+
+.dashboard-home {
+    max-width: 600px;
+}
+
+.dashboard-home h1 {
+    font-size: 2rem;
+    margin-bottom: 14px;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.dashboard-home p {
+    font-size: 1.1rem;
+    margin-bottom: 24px;
+    color: #f0f0f0;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.dashboard-home img {
+    max-width: 360px;
+    max-height: 280px;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.page-container {
+    width: 100%;
+    max-width: 1400px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    padding: 30px;
+    min-height: 400px;
+    min-width: 600px;
+}
+
+.page-container.pagina-equipos,
+.page-container.facturas-container,
+.page-container.pagina-proveedores,
+.page-container.pagina-contactos,
+.page-container.pagina-ubicaciones,
+.page-container.pagina-modelos,
+.page-container.pagina-tipos,
+.page-container.pagina-marcas {
+    min-width: 1000px;
 }
 
 table {
@@ -117,7 +632,8 @@ table {
     background: white;
 }
 
-th, td {
+th,
+td {
     border: 1px solid #888;
     padding: 4px 6px;
     font-size: 13px;
@@ -136,4 +652,101 @@ button {
 
 button:hover {
     background: #cfcfcf;
+}
+
+.logout-btn {
+    padding: 4px 10px;
+    border: 1px solid #a00;
+    border-radius: 4px;
+    background: #ff4b4b;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+    background: #d63131;
+}
+
+@media (max-width: 1100px) {
+    .topbar {
+        align-items: flex-start;
+        gap: 10px;
+        flex-direction: column;
+    }
+
+    .topbar-brand {
+        width: 100%;
+    }
+
+    .app-nav {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .topbar-shortcuts {
+        width: 100%;
+        justify-content: flex-start;
+        padding-left: 0;
+        margin-left: 0;
+    }
+
+    .topbar-shortcuts::before {
+        display: none;
+    }
+
+    .taskbar-item {
+        min-width: 120px;
+    }
+}
+
+.topbar {
+    display: flex;
+    align-items: stretch;
+}
+
+/* LADO IZQUIERDO (LOGO) */
+.topbar-left {
+    display: flex;
+    align-items: center;
+    padding-right: 16px;
+    border-right: 1px solid rgba(255,255,255,0.15);
+}
+
+/* LADO DERECHO */
+.topbar-right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* FILAS */
+.topbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.topbar-row-top {
+    padding-bottom: 4px;
+}
+
+.topbar-row-bottom {
+    padding-top: 4px;
+}
+
+.topbar-row-top {
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+.topbar-row-bottom {
+    padding-top: 6px;
+}
+
+.app-logo {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
 }

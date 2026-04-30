@@ -5,11 +5,11 @@
 @endsection
 
 @section('content')
-<div class="pagina-historial">
+<div class="page-container pagina-historial">
     <header class="historial-header">
         <h1>Historial: {{ $equipo->serie }}</h1>
         <div class="historial-toolbar">
-            <a href="{{ route('equipos.index') }}" class="btn-link">← Volver a Equipos</a>
+            <a href="{{ route('equipos.index') }}{{ request()->has('window') ? '?window=1' : '' }}" class="btn-link">← Volver a Equipos</a>
         </div>
     </header>
 
