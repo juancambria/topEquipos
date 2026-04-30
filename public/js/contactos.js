@@ -164,6 +164,7 @@
                 }
 
             },
+            false,
             false
         );
     });
@@ -235,7 +236,8 @@
                 function() {
                     forceCerrarModalContacto();
                 },
-                false
+                false,
+                true
             );
         }
     };
@@ -298,7 +300,8 @@
                         mostrarToast('Error: ' + error.message, 'error');
                     });
                 },
-                false
+                false,
+                true
             );
         });
     }

@@ -128,7 +128,7 @@
         }
     }
 
-window.abrirModalConfirmacion = function(titulo, mensaje, callback, requireObservacion = false) {
+window.abrirModalConfirmacion = function(titulo, mensaje, callback, requireObservacion, esPeligro) {
         crearModalConfirmacion();
 
         var overlay = document.getElementById('modal-confirmacion-overlay');
@@ -141,6 +141,12 @@ window.abrirModalConfirmacion = function(titulo, mensaje, callback, requireObser
         var maxZIndex = obtenerMaxZIndexVisible();
         overlay.style.zIndex = String(maxZIndex + 10);
 
+        if (typeof requireObservacion === 'undefined') {
+            requireObservacion = false;
+        }
+        if (typeof esPeligro === 'undefined') {
+            esPeligro = false;
+        }
 
         document.getElementById('modal-confirmacion-titulo').textContent = titulo;
         document.getElementById('modal-confirmacion-mensaje').textContent = mensaje;
@@ -148,6 +154,8 @@ window.abrirModalConfirmacion = function(titulo, mensaje, callback, requireObser
         var obsDiv = document.querySelector('.modal-confirmacion-observacion');
         var confirmarBtn = document.getElementById('modal-confirmacion-confirmar');
         var textarea = document.getElementById('modal-confirmacion-observacion');
+
+        overlay.classList.toggle('modal-confirmacion--peligro', !!esPeligro);
 
         obsDiv.style.display = requireObservacion ? 'block' : 'none';
         textarea.value = '';
@@ -172,6 +180,11 @@ window.abrirModalConfirmacion = function(titulo, mensaje, callback, requireObser
         var overlay = document.getElementById('modal-confirmacion-overlay');
         if (overlay) {
             overlay.classList.remove('activo');
+            overlay.classList.remove('modal-confirmacion--peligro');
+            var btn = document.getElementById('modal-confirmacion-confirmar');
+            if (btn) {
+                btn.disabled = false;
+            }
             callbackConfirmacion = null;
         }
     }

@@ -152,24 +152,40 @@
     transition: all 0.2s ease;
 }
 
-.modal-confirmacion-botones .btn-cancelar {
-    background: #f5f5f5;
-    color: #333;
-    border: 1px solid #ddd;
+/* Mismo criterio que .btn.btn-secundario (No / cancelar) */
+.modal-confirmacion-botones .btn.btn-cancelar {
+    background: #6c757d;
+    color: #fff;
+    border: 1px solid #5a6268;
+    font-weight: 500;
 }
 
-.modal-confirmacion-botones .btn-cancelar:hover {
-    background: #e5e5e5;
+.modal-confirmacion-botones .btn.btn-cancelar:hover {
+    background: #5a6268;
+    border-color: #4e555b;
+    color: #fff;
 }
 
 .modal-confirmacion-botones .btn-confirmar {
-    background: #333;
-    color: white;
-    border: 1px solid #333;
+    background: #218838;
+    color: #fff;
+    border: 1px solid #1e7e34;
+    font-weight: 500;
 }
 
 .modal-confirmacion-botones .btn-confirmar:hover {
-    background: #555;
+    background: #1c7430;
+    border-color: #186429;
+}
+
+.modal-confirmacion-overlay.modal-confirmacion--peligro .modal-confirmacion-botones .btn-confirmar {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+.modal-confirmacion-overlay.modal-confirmacion--peligro .modal-confirmacion-botones .btn-confirmar:hover {
+    background: #bd2130;
+    border-color: #a71d2a;
 }
 
 .modal-confirmacion-botones .btn-confirmar:disabled {

@@ -286,7 +286,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
   }
 
   function forceCerrarTodosLosModales() {
-    ['modalFactura', 'modalVerFactura', 'modalVerFacturaDynamic', 'modalBajaFactura', 'modalAltaFactura', 'modalProveedor', 'modalConfirmAltaEquiposFactura', 'modalConfirmFacturasAccion'].forEach((id) => {
+    ['modalFactura', 'modalVerFactura', 'modalVerFacturaDynamic', 'modalBajaFactura', 'modalProveedor', 'modalConfirmAltaEquiposFactura', 'modalConfirmFacturasAccion'].forEach((id) => {
       setModalVisible(id, false);
     });
     setModalVisible('modalEquipoFactura', false, true);
@@ -1238,20 +1238,6 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     return false;
   }
 
-  function abrirModalAlta(id, numero) {
-    cerrarTodosLosModales();
-    const form = document.getElementById('formAltaFactura');
-    const idInput = document.getElementById('alta_id');
-    const nro = document.getElementById('alta_numero');
-
-    if (form) form.action = `/facturas/${id}/alta`;
-    if (idInput) idInput.value = id;
-    if (nro) nro.textContent = numero;
-
-    setModalVisible('modalAltaFactura', true);
-    return false;
-  }
-
   function getSelectedFacturaRow() {
     if (!state.selectedFacturaId) return null;
     return document.querySelector(`#tablaFacturas tbody tr[data-id="${state.selectedFacturaId}"]`);
@@ -1262,7 +1248,6 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const info = document.getElementById('selectedFacturaInfo');
     const btnDetalle = document.getElementById('btnVerDetalleFactura');
     const btnBaja = document.getElementById('btnBajaFacturaToolbar');
-    const btnAlta = document.getElementById('btnAltaFactura');
     const enabled = !!row;
 
     if (info) {
@@ -1273,7 +1258,6 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     if (btnDetalle) btnDetalle.disabled = !enabled;
     if (btnBaja) btnBaja.disabled = !enabled;
-    if (btnAlta) btnAlta.disabled = !enabled;
   }
 
   function selectFacturaRow(row) {
@@ -1306,7 +1290,6 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     const btnDetalle = document.getElementById('btnVerDetalleFactura');
     const btnBaja = document.getElementById('btnBajaFacturaToolbar');
-    const btnAlta = document.getElementById('btnAltaFactura');
 
     btnDetalle?.addEventListener('click', () => {
       const row = getSelectedFacturaRow();
@@ -1325,20 +1308,20 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
         const data = await response.json();
 
         let confirmarEliminarEquipos = false;
-        let mensaje = `¿Estás seguro de dar de baja la factura ${row.dataset.numero || row.dataset.id}?`;
+        let mensaje = `¿Eliminar permanentemente la factura ${row.dataset.numero || row.dataset.id}?`;
 
         if (data.tieneEquipos) {
           const n = typeof data.cantidad === 'number' ? data.cantidad : 0;
-          mensaje += `\n\nEsta factura tiene ${n} renglón(es) tipo compra de equipo.`;
+          mensaje += `\n\nHay ${n} renglón(es) tipo compra de equipo. Podés elegir borrar también los equipos vinculados por número de factura.`;
           confirmarEliminarEquipos = true;
         }
 
-        mensaje += `\n\nLa factura quedará inactiva; podés reactivarla en Facturas inactivas.`;
+        mensaje += `\n\nEsta acción no se puede deshacer.`;
         
         const confirmado = await confirmarAccion({
-          titulo: 'Dar de baja factura',
+          titulo: 'Eliminar factura',
           texto: mensaje,
-          textoAceptar: confirmarEliminarEquipos ? 'Sí, baja y eliminar equipos' : 'Sí, dar de baja',
+          textoAceptar: confirmarEliminarEquipos ? 'Sí, eliminar factura y equipos' : 'Sí, eliminar factura',
           textoCancelar: 'Cancelar',
           peligro: true,
         });
@@ -1358,29 +1341,6 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       } catch (error) {
         toast('Error al verificar equipos: ' + error.message, 'error');
       }
-    });
-
-    btnAlta?.addEventListener('click', async () => {
-      const row = getSelectedFacturaRow();
-      if (!row) return;
-      const confirmado = await confirmarAccion({
-        titulo: 'Reactivar factura',
-        texto: `Se reactivará la factura ${row.dataset.numero || row.dataset.id}. ¿Deseás continuar?`,
-        textoAceptar: 'Sí, reactivar',
-        textoCancelar: 'Cancelar',
-        peligro: false,
-      });
-      if (!confirmado) return;
-
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = `/facturas/${row.dataset.id}/alta`;
-      form.innerHTML = `
-        <input type="hidden" name="_token" value="${csrfToken()}">
-        <input type="hidden" name="_method" value="PUT">
-      `;
-      document.body.appendChild(form);
-      form.submit();
     });
 
     updateFacturaToolbarState();
@@ -2362,51 +2322,18 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       const id = document.getElementById('baja_id')?.value;
       const numero = document.getElementById('baja_numero')?.textContent || id;
       const obs = document.getElementById('baja_observacion')?.value?.trim();
-
-      if (!obs) {
-        toast('Ingrese motivo de baja', 'warning');
-        return;
-      }
+      const obsLine = obs ? `\n\nNota: ${obs}` : '';
 
       const confirmado = await confirmarAccion({
-        titulo: 'Confirmar baja de factura',
-        texto: `¿Confirmás dar de baja la factura ${numero}?\n\nMotivo: ${obs}`,
-        textoAceptar: 'Sí, dar de baja',
+        titulo: 'Confirmar eliminación',
+        texto: `¿Confirmás eliminar permanentemente la factura ${numero}?${obsLine}`,
+        textoAceptar: 'Sí, eliminar',
         textoCancelar: 'Cancelar',
         peligro: true,
       });
 
       if (confirmado) {
         form.dataset.bajaConfirmed = '1';
-        form.requestSubmit();
-      }
-    });
-  }
-
-  function initConfirmacionFormAlta() {
-    const form = document.getElementById('formAltaFactura');
-    if (!form || form.dataset.confirmBound === '1') return;
-    form.dataset.confirmBound = '1';
-
-    form.addEventListener('submit', async (e) => {
-      if (form.dataset.altaConfirmed === '1') {
-        form.dataset.altaConfirmed = '0';
-        return;
-      }
-      e.preventDefault();
-      const id = document.getElementById('alta_id')?.value;
-      const numero = document.getElementById('alta_numero')?.textContent || id;
-
-      const confirmado = await confirmarAccion({
-        titulo: 'Confirmar reactivación',
-        texto: `¿Confirmás reactivar la factura ${numero}?`,
-        textoAceptar: 'Sí, reactivar',
-        textoCancelar: 'Cancelar',
-        peligro: false,
-      });
-
-      if (confirmado) {
-        form.dataset.altaConfirmed = '1';
         form.requestSubmit();
       }
     });
@@ -2427,7 +2354,6 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     initFormularioProveedorFactura();
     initFormularioEquipoDesdeFactura();
     initConfirmacionFormBaja();
-    initConfirmacionFormAlta();
     initGarantiaFactura();
     initRestoreModalEquipoFacturaTrasEntidad();
     initBuscadoresModalEquipoFactura();
@@ -2452,7 +2378,6 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     abrirModalEditar,
     verDetalles,
     abrirModalBaja,
-    abrirModalAlta,
     agregarDetalleFila,
     eliminarDetalleFila,
     renumerarIndicesFilas,

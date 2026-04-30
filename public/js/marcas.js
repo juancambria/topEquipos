@@ -123,6 +123,7 @@
                 }
 
             },
+            false,
             false
         );
     });
@@ -184,7 +185,8 @@
                 'Cerrar marca',
                 'Se van a perder los cambios realizados. ¿Desea continuar?',
                 forceCerrarModalMarca,
-                false
+                false,
+                true
             );
         } else {
             forceCerrarModalMarca();

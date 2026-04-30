@@ -82,6 +82,7 @@
             function() {
                 ejecutarSubmitTipo();
             },
+            false,
             false
         );
     });
@@ -128,7 +129,8 @@
             'Cerrar tipo',
             'Se van a perder los cambios realizados. ¿Desea continuar?',
             forceCerrarModalTipo,
-            false
+            false,
+            true
         );
     };
 

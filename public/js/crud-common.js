@@ -305,6 +305,7 @@
             message: '',
             onConfirm: function() {},
             requireObservacion: false,
+            esPeligro: true,
         }, options || {});
 
         var row = settings.getRow ? settings.getRow() : null;
@@ -323,7 +324,8 @@
             function() {
                 settings.onConfirm(row);
             },
-            settings.requireObservacion
+            settings.requireObservacion,
+            settings.esPeligro !== false
         );
 
         return row;
@@ -335,6 +337,7 @@
             message: function() { return '¿Continuar?'; },
             onConfirm: function(form) { form.submit(); },
             requireObservacion: false,
+            esPeligro: true,
         }, options || {});
 
         document.querySelectorAll(selector).forEach(function(form) {
@@ -346,7 +349,8 @@
                     function() {
                         settings.onConfirm(form);
                     },
-                    settings.requireObservacion
+                    settings.requireObservacion,
+                    settings.esPeligro !== false
                 );
             });
         });

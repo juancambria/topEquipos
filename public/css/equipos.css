@@ -135,47 +135,9 @@
     min-width: 140px;
 }
 
+/* .btn base y colores primario/baja: crud-entities.css (no duplicar aquí; esta hoja va después y machacaría el verde) */
 
-.btn {
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 13px;
-    cursor: pointer;
-    border: 1px solid #888;
-    background: #e8e8e8;
-}
-
-.btn:hover {
-    background: #ddd;
-}
-
-/* Gana sobre .btn genérico (misma hoja, misma especificidad; .btn solo tiene 1 clase) */
-.btn.btn-danger {
-    background: #dc3545;
-    color: #fff;
-    border-color: #dc3545;
-}
-.btn.btn-danger:hover {
-    background: #c82333;
-}
-.btn.btn-success {
-    background: #28a745;
-    color: #fff;
-    border-color: #28a745;
-}
-.btn.btn-success:hover {
-    background: #218838;
-}
-
-.btn-primario {
-    background: #2f2f2f;
-    color: #fff;
-    border-color: #2f2f2f;
-}
-
-.btn-primario:hover {
-    background: #444;
-}
+/* Colores de .btn-primario, .btn-baja, .btn-danger: ver public/css/crud-entities.css */
 
 .modal-equipo-footer .btn-primario.disabled,
 .modal-equipo-footer .btn-primario:disabled {
@@ -190,22 +152,7 @@
     margin-left: 8px;
 }
 
-.btn-secundario {
-    background: #fff;
-}
-
-.btn-agregar-entidad {
-    min-width: 34px;
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    line-height: 1;
-    font-weight: 600;
-}
+/* .btn-secundario: ver crud-entities.css */
 
 .btn-link {
     background: none;
@@ -220,15 +167,6 @@
 .btn-link:hover {
     color: #000;
 }
-
-.btn-baja {
-    color: #a00;
-}
-
-.btn-baja:hover {
-    color: #c00;
-}
-
 
 .equipos-tabla-wrap {
     background: #fff;

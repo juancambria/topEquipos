@@ -178,7 +178,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-outline-secondary btn-agregar-entidad" onclick="abrirModalTipo('crear')" title="Crear nuevo tipo">+</button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="abrirModalTipo('crear')" title="Crear nuevo tipo">+</button>
                             </div>
                         </div>
                     </div>
@@ -193,7 +193,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-outline-secondary btn-agregar-entidad" onclick="abrirModalMarca('crear')" title="Crear nueva marca">+</button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="abrirModalMarca('crear')" title="Crear nueva marca">+</button>
                             </div>
                         </div>
                     </div>
@@ -208,7 +208,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-outline-secondary btn-agregar-entidad" onclick="abrirModalModelo('crear')" title="Crear nuevo modelo">+</button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="abrirModalModelo('crear')" title="Crear nuevo modelo">+</button>
                             </div>
                         </div>
                     </div>
@@ -260,7 +260,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-outline-secondary btn-agregar-entidad" onclick="abrirModalUbicacion('crear')" title="Crear nueva ubicación">+</button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="abrirModalUbicacion('crear')" title="Crear nueva ubicación">+</button>
                             </div>
                         </div>
                     </div>
@@ -275,7 +275,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-outline-secondary btn-agregar-entidad" onclick="abrirModalSector('crear')" title="Crear nuevo sector">+</button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="abrirModalSector('crear')" title="Crear nuevo sector">+</button>
                             </div>
                         </div>
                     </div>

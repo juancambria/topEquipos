@@ -236,30 +236,62 @@
 }
 
 .btn-primario {
-    background: #2f2f2f;
+    background: #218838;
     color: #fff;
-    border-color: #2f2f2f;
+    border-color: #1e7e34;
+    font-weight: 500;
 }
 
 .btn-primario:hover {
-    background: #444;
+    background: #1c7430;
+    border-color: #186429;
+    color: #fff;
 }
 
 .modal-sector-footer .btn-primario.disabled,
-.modal-sector-footer .btn-primario:disabled {
+.modal-sector-footer .btn-primario:disabled,
+.modal-equipo-footer .btn-primario.disabled,
+.modal-equipo-footer .btn-primario:disabled {
     opacity: 0.55;
     cursor: not-allowed;
     position: relative;
 }
 
 .modal-sector-footer .btn-primario.disabled::after,
-.modal-sector-footer .btn-primario:disabled::after {
-    /* content: '🔒'; */
+.modal-sector-footer .btn-primario:disabled::after,
+.modal-equipo-footer .btn-primario.disabled::after,
+.modal-equipo-footer .btn-primario:disabled::after {
     margin-left: 8px;
 }
 
-.btn-secundario {
-    background: #fff;
+/* Cancelar / Cerrar / acción neutra: contraste claro, sin fondo blanco */
+.btn.btn-secundario {
+    background: #6c757d;
+    color: #fff;
+    border: 1px solid #5a6268;
+    font-weight: 500;
+}
+
+.btn.btn-secundario:hover {
+    background: #5a6268;
+    border-color: #4e555b;
+    color: #fff;
+}
+
+/* Eliminar / baja / riesgo de pérdida de datos */
+.btn-baja,
+.btn.btn-danger {
+    background: #c82333;
+    color: #fff !important;
+    border-color: #bd2130;
+    font-weight: 500;
+}
+
+.btn-baja:hover,
+.btn.btn-danger:hover {
+    background: #bd2130;
+    border-color: #a71d2a;
+    color: #fff !important;
 }
 
 .btn-link {
@@ -276,12 +308,33 @@
     color: #000;
 }
 
-.btn-baja {
-    color: #a00;
+/**
+ * Botón "+" junto a selects (alta de entidad desde modal equipo / factura).
+ * Mismo aspecto en toda la app.
+ */
+.btn-agregar-entidad {
+    box-sizing: border-box;
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    line-height: 1;
+    font-weight: 600;
+    background: #218838;
+    color: #fff;
+    border: 1px solid #1e7e34;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
-.btn-baja:hover {
-    color: #c00;
+.btn-agregar-entidad:hover {
+    background: #1c7430;
+    border-color: #186429;
+    color: #fff;
 }
 
 .form-inline {

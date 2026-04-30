@@ -161,7 +161,8 @@
                 function() {
                     forceCerrarModalProveedor();
                 },
-                false
+                false,
+                true
             );
         }
     };
@@ -232,7 +233,8 @@
                     document.body.appendChild(form);
                     form.submit();
                     },
-                    true  // peligro = true
+                    false,
+                    true
                 );
             } catch (error) {
                 mostrarToast('Error al verificar equipos: ' + error.message, 'error');
@@ -304,6 +306,7 @@
                 });
 
             },
+            false,
             false
         );
     });

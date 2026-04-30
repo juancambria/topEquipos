@@ -38,7 +38,7 @@
                                         @endforeach
                                     </select>
                                     <div class="input-group-append">
-                                        <button type="button" class="btn btn-primario btn-agregar-entidad" onclick="debugClick('Proveedor')" title="Crear nuevo proveedor" aria-label="Agregar proveedor">+</button>
+                                        <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Proveedor')" title="Crear nuevo proveedor" aria-label="Agregar proveedor">+</button>
                                     </div>
                                 </div>
                             </div>
@@ -197,13 +197,13 @@
 </div>
 
 <!-- ============================================
-     MODAL BAJA
+     MODAL BAJA / ELIMINAR
      ============================================ -->
 <div id="modalBajaFactura" class="modal" data-modal-focus="#baja_observacion">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Dar de Baja Factura</h5>
+                <h5 class="modal-title">Eliminar factura</h5>
                 <button type="button" class="close" onclick="cerrarModal('modalBajaFactura')">
                     <span>&times;</span>
                 </button>
@@ -215,50 +215,18 @@
                 <div class="modal-body">
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Atencion!</strong> Esta accion dara de baja la factura.
+                        <strong>Atención.</strong> La factura se eliminará de forma permanente (y sus renglones). Esta acción no se puede deshacer.
                     </div>
-                    <p>Esta seguro de dar de baja la factura <strong id="baja_numero"></strong>?</p>
+                    <p>¿Eliminar la factura <strong id="baja_numero"></strong>?</p>
                     <div class="form-group">
-                        <label for="baja_observacion">Motivo de la baja *</label>
-                        <textarea name="observacion" id="baja_observacion" required rows="3" 
-                            placeholder="Ingrese el motivo de la baja..." class="form-control"></textarea>
+                        <label for="baja_observacion">Nota (opcional)</label>
+                        <textarea name="observacion" id="baja_observacion" rows="3" 
+                            placeholder="Motivo o comentario interno..." class="form-control"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secundario" onclick="cerrarModal('modalBajaFactura')">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Confirmar Baja</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- ============================================
-     MODAL ALTA
-     ============================================ -->
-<div id="modalAltaFactura" class="modal" data-modal-focus=".modal-footer .btn-success">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Reactivar Factura</h5>
-                <button type="button" class="close" onclick="cerrarModal('modalAltaFactura')">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <form action="#" method="POST" id="formAltaFactura">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="id" id="alta_id">
-                <div class="modal-body">
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i>
-                        <strong>Atencion!</strong> Esta accion reactivara la factura.
-                    </div>
-                    <p>Esta seguro de reactivas la factura <strong id="alta_numero"></strong>?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secundario" onclick="cerrarModal('modalAltaFactura')">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Confirmar Reactivacion</button>
+                    <button type="submit" class="btn btn-danger">Eliminar factura</button>
                 </div>
             </form>
         </div>
@@ -363,7 +331,7 @@
                             </select>
                             <input type="text" id="buscarEquipoFacturaTipo" class="form-control mt-1" placeholder="Buscar tipo..." style="display:none;">
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-primario btn-agregar-entidad" onclick="debugClick('Tipo')" title="Crear nuevo tipo">
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Tipo')" title="Crear nuevo tipo">
                                     +
                                 </button>
                             </div>
@@ -381,7 +349,7 @@
                             </select>
                             <input type="text" id="buscarEquipoFacturaMarca" class="form-control mt-1" placeholder="Buscar marca..." style="display:none;">
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-primario btn-agregar-entidad" onclick="debugClick('Marca')" title="Crear nueva marca">
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Marca')" title="Crear nueva marca">
                                     +
                                 </button>
                             </div>
@@ -399,7 +367,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-primario btn-agregar-entidad" onclick="debugClick('Modelo')" title="Crear nuevo modelo">
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Modelo')" title="Crear nuevo modelo">
                                     +
                                 </button>
                             </div>
@@ -455,7 +423,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-primario btn-agregar-entidad" onclick="debugClick('Ubicacion')" title="Crear nueva ubicación">
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Ubicacion')" title="Crear nueva ubicación">
                                     +
                                 </button>
                             </div>
@@ -474,7 +442,7 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-primario btn-agregar-entidad" onclick="debugClick('Sector')" title="Crear nuevo sector">
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Sector')" title="Crear nuevo sector">
                                     +
                                 </button>
                             </div>

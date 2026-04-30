@@ -110,6 +110,7 @@
             function() {
                 ejecutarSubmitModelo();
             },
+            false,
             false
         );
     });
@@ -229,7 +230,8 @@
             'Cerrar modelo',
             'Se van a perder los cambios realizados. ¿Desea continuar?',
             forceCerrarModalModelo,
-            false
+            false,
+            true
         );
     };
 

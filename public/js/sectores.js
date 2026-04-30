@@ -155,7 +155,8 @@
                 sectorEditMode ? 'Cerrar edición de sector' : 'Cerrar creación de sector',
                 'Se van a perder los cambios realizados. ¿Desea continuar?',
                 forceCerrarModalSector,
-                false
+                false,
+                true
             );
         };
 
@@ -184,6 +185,7 @@
                 tituloConfirmacion,
                 mensaje,
                 guardarSector,
+                false,
                 false
             );
         });

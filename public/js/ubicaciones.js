@@ -163,7 +163,8 @@
                 function() {
                     forceCerrarModalUbicacion();
                 },
-                false
+                false,
+                true
             );
         } else {
             forceCerrarModalUbicacion();
@@ -237,7 +238,9 @@
                 function() {
                     const form = row.querySelector('.form-baja');
                     if (form) form.submit();
-                }
+                },
+                false,
+                true
             );
         });
     }
@@ -274,6 +277,7 @@
             function() {
                 cerrarModal('modalSectores');
             },
+            false,
             false
         );
     };
@@ -553,6 +557,7 @@
                 }
 
             },
+            false,
             false
         );
     });
@@ -593,7 +598,8 @@
                         mostrarToast('Eliminando la ubicación...', 'warning');
                         form.submit();
                     },
-                    false
+                    false,
+                    true
                 );
             });
         });

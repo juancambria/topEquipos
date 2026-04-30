@@ -85,7 +85,8 @@
             titulo,
             'Se van a perder los cambios realizados. ¿Desea continuar?',
             function() { forceCerrarEntidadModal(nombre, modalId); },
-            false
+            false,
+            true
         );
     }
 
@@ -94,6 +95,7 @@
             titulo,
             '¿Estás seguro de guardar los cambios?',
             callback,
+            false,
             false
         );
     }
@@ -827,23 +829,55 @@ form.addEventListener('submit', async function(e) {
                             body: formData,
                             headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest' })
                         })
-                        .then(response => response.text().then(text => {
-                            try {
-                                return JSON.parse(text);
-                            } catch {
+                        .then(function(response) {
+                            return response.text().then(function(text) {
+                                var data = null;
+                                try {
+                                    var raw = text == null ? '' : String(text).trim();
+                                    if (raw) {
+                                        data = JSON.parse(raw);
+                                    }
+                                } catch (parseErr) {
+                                    if (!response.ok) {
+                                        return {
+                                            success: false,
+                                            message: 'Error del servidor (' + response.status + ')',
+                                        };
+                                    }
+                                    return { success: true, _legacyNonJsonOk: true };
+                                }
+                                if (!response.ok) {
+                                    var msg = (data && data.message) ? data.message : 'Error al actualizar';
+                                    if (data && data.errors) {
+                                        var errs = Object.values(data.errors).flat();
+                                        if (errs.length) {
+                                            msg = String(errs[0] || msg);
+                                        }
+                                    }
+                                    return { success: false, message: msg };
+                                }
+                                if (!data || typeof data !== 'object') {
+                                    return { success: true, message: 'Actualizado correctamente' };
+                                }
+                                if (typeof data.success === 'undefined') {
+                                    return { success: true, message: data.message || 'Actualizado correctamente' };
+                                }
+                                return data;
+                            });
+                        })
+                        .then(function(data) {
+                            if (data._legacyNonJsonOk) {
                                 mostrarToast('Operación completada', 'success');
                                 forceCerrarModalEquipo();
                                 location.reload();
-                                return { success: true };
+                                return;
                             }
-                        }))
-                        .then(data => {
                             if (data.success) {
                                 mostrarToast(data.message || 'Actualizado correctamente', 'success');
                                 forceCerrarModalEquipo();
                                 location.reload();
                             } else {
-                                mostrarToast('Error: ' + (data.message || 'Error desconocido'), 'error');
+                                mostrarToast(data.message || 'Error desconocido', 'error');
                             }
                         })
                         .catch(error => {
@@ -855,6 +889,7 @@ form.addEventListener('submit', async function(e) {
                         });
                     }
                 },
+                false,
                 false
             );
         });
@@ -1241,7 +1276,8 @@ function forceCerrarModalEquipo() {
             'Cerrar equipo',
             'Se van a perder los cambios realizados. ¿Desea continuar?',
             forceCerrarModalEquipo,
-            false
+            false,
+            true
         );
     };
 
@@ -1412,6 +1448,7 @@ btnBajaEquipo.addEventListener('click', function() {
             formBajaEquipo.action = '/equipos/' + idNum + '/baja';
             formBajaEquipo.submit();
         },
+        true,
         true
     );
 });
@@ -1540,6 +1577,7 @@ btnBajaEquipo.addEventListener('click', function() {
                     mostrarToast('Dando de baja el equipo...', 'warning');
                     form.submit();
                 },
+                true,
                 true
             );
         });
@@ -1560,6 +1598,7 @@ btnBajaEquipo.addEventListener('click', function() {
                     mostrarToast('Activando el equipo...', 'warning');
                     form.submit();
                 },
+                false,
                 false
             );
         });

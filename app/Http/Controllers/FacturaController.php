@@ -18,7 +18,7 @@ class FacturaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Factura::with('proveedor')->activos();
+        $query = Factura::with('proveedor');
 
         // Filtro por proveedor
         if ($request->filled('proveedor')) {
@@ -53,43 +53,7 @@ class FacturaController extends Controller
         $ubicaciones = Ubicacion::activos()->orderBy('nombre')->get();
         $sectores = Sector::activos()->orderBy('nombre')->get();
 
-        $esVistaInactivos = false;
-
-        return view('facturas.index', compact('facturas', 'proveedores', 'marcas', 'modelos', 'tipos', 'ubicaciones', 'sectores', 'esVistaInactivos'));
-    }
-
-    public function inactivos(Request $request)
-    {
-        $query = Factura::with('proveedor')->where('estado', 'baja');
-
-        if ($request->filled('buscar')) {
-            $query->buscar($request->buscar);
-        }
-
-        $column = $request->input('column', 'idFactura');
-        $order = $request->input('order', 'desc');
-
-        $allowedColumns = ['idFactura', 'numero', 'fecha', 'total', 'created_at'];
-        if (!in_array($column, $allowedColumns, true)) {
-            $column = 'idFactura';
-        }
-        $order = in_array($order, ['asc', 'desc'], true) ? $order : 'desc';
-
-        $query->orderBy($column, $order);
-
-        $facturas = $query->get();
-        $proveedores = Proveedor::all();
-
-        // Variables para el modal de equipos
-        $marcas = Marca::activos()->orderBy('marca')->get();
-        $modelos = Modelo::activos()->with('marca')->orderBy('modelo')->get();
-        $tipos = Tipo::activos()->orderBy('nombreTipo')->get();
-        $ubicaciones = Ubicacion::activos()->orderBy('nombre')->get();
-        $sectores = Sector::activos()->orderBy('nombre')->get();
-
-        $esVistaInactivos = true;
-
-        return view('facturas.index', compact('facturas', 'proveedores', 'marcas', 'modelos', 'tipos', 'ubicaciones', 'sectores', 'esVistaInactivos'));
+        return view('facturas.index', compact('facturas', 'proveedores', 'marcas', 'modelos', 'tipos', 'ubicaciones', 'sectores'));
     }
 
     public function show($id)
@@ -261,7 +225,7 @@ class FacturaController extends Controller
      */
     public function actualizar(Request $request, $id)
     {
-        $factura = Factura::activos()->where('idFactura', $id)->firstOrFail();
+        $factura = Factura::where('idFactura', $id)->firstOrFail();
 
         $this->mergeCleaned($request, [
             'numero' => $this->cleanString($request->input('numero')),
@@ -474,43 +438,30 @@ class FacturaController extends Controller
             'observacion' => 'nullable|string|max:1000',
         ]);
 
-        $factura = Factura::activos()->where('idFactura', $id)->firstOrFail();
+        $factura = Factura::where('idFactura', $id)->firstOrFail();
 
         $eliminarEquipos = $request->boolean('eliminar_equipos', false);
 
-        if ($eliminarEquipos) {
-            Equipo::where('numeroFactura', $factura->numero)->delete();
-        }
-
+        DB::beginTransaction();
         try {
-            $data = ['estado' => 'baja'];
-            if ($request->filled('observacion')) {
-                $motivo = $this->cleanTextarea($request->input('observacion'));
-                if ($motivo !== null && $motivo !== '') {
-                    $prev = trim((string) ($factura->observacion ?? ''));
-                    $data['observacion'] = $prev === '' ? ('[Baja] ' . $motivo) : ($prev . "\n\n[Baja] " . $motivo);
-                }
+            if ($eliminarEquipos) {
+                Equipo::where('numeroFactura', $factura->numero)->delete();
             }
-            $factura->update($data);
+
+            $factura->delete();
+            DB::commit();
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', 'No se pudo dar de baja la factura: ' . $e->getMessage());
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'No se pudo eliminar la factura: ' . $e->getMessage());
         }
 
-        return redirect()->back()->with('success', 'Factura dada de baja correctamente');
-    }
-
-    public function alta($id)
-    {
-        $factura = Factura::where('estado', 'baja')->where('idFactura', $id)->firstOrFail();
-        $factura->darDeAlta();
-
-        return redirect()->back()->with('success', 'Factura reactivada correctamente');
+        return redirect()->back()->with('success', 'Factura eliminada correctamente');
     }
 
     public function porProveedor($idProveedor)
     {
-        $facturas = Factura::activos()
-            ->where('idProveedor', $idProveedor)
+        $facturas = Factura::where('idProveedor', $idProveedor)
             ->orderBy('fecha', 'desc')
             ->get();
 

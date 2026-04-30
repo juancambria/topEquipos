@@ -195,12 +195,10 @@ Route::prefix('historial')->name('historial.')->group(function () {
 */
 Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::get('/', [FacturaController::class, 'index'])->name('index');
-    Route::get('/inactivos', [FacturaController::class, 'inactivos'])->name('inactivos');
     Route::get('/{id}/tiene-equipos', [FacturaController::class, 'apiTieneEquipos']);
     Route::post('/crear', [FacturaController::class, 'crear'])->name('crear');
     Route::put('/{id}/actualizar', [FacturaController::class, 'actualizar'])->name('actualizar');
     Route::delete('/{id}/baja', [FacturaController::class, 'baja'])->name('baja');
-    Route::put('/{id}/alta', [FacturaController::class, 'alta'])->name('alta');
     Route::get('/proveedor/{idProveedor}', [FacturaController::class, 'porProveedor'])->name('porProveedor');
     Route::post('/limpiar-sesion-equipos', [FacturaController::class, 'limpiarSesionEquipos'])->name('limpiarSesionEquipos');
     Route::get('/siguiente-numero', [FacturaController::class, 'siguienteNumero'])->name('siguienteNumero');

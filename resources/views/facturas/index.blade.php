@@ -3,7 +3,7 @@
 @section('title', 'Facturas')
 
 @section('content')
-<div class="page-container facturas-container" data-es-vista-inactivos="{{ $esVistaInactivos ? '1' : '0' }}">
+<div class="page-container facturas-container">
     <!-- Contenedor para datos de sesión de equipos por crear -->
     @if(session('equiposPorCrear'))
     <div id="datos-equipos" 
@@ -15,7 +15,7 @@
     @endif
     
     <header class="facturas-header">
-        <h1>{{ $esVistaInactivos ? 'Facturas Inactivas' : 'Gestión de Facturas' }}</h1>
+        <h1>Gestión de Facturas</h1>
         <div class="facturas-toolbar">
             <div class="search-wrapper">
                 <span class="search-icon" aria-hidden="true">🔍</span>
@@ -35,28 +35,15 @@
                 @endforeach
             </select>
             <span id="selectedFacturaInfo" class="selected-info">Ninguna factura seleccionada</span>
-            @if($esVistaInactivos)
-                <a href="{{ route('facturas.index') }}" class="btn btn-primario tool-btn" title="Volver a facturas activas">Facturas activas</a>
-            @else
-                <a href="{{ route('facturas.inactivos') }}" class="btn btn-primario tool-btn" title="Ver facturas dadas de baja">Facturas inactivas</a>
-            @endif
-            @unless($esVistaInactivos)
-                <button type="button" class="btn btn-primario tool-btn" data-toolbar-key="a" onclick="confirmarAbrirCrearFactura()" title="Crear factura (Alt+A)">
-                    <span class="tool-icon">➕</span><span class="tool-label"><span class="acc-k">A</span>ñadir</span>
-                </button>
-            @endunless
+            <button type="button" class="btn btn-primario tool-btn" data-toolbar-key="a" onclick="confirmarAbrirCrearFactura()" title="Crear factura (Alt+A)">
+                <span class="tool-icon">➕</span><span class="tool-label"><span class="acc-k">A</span>ñadir</span>
+            </button>
             <button type="button" id="btnVerDetalleFactura" class="btn btn-primario tool-btn" data-toolbar-key="d" disabled title="Detalle (Alt+D)">
                 <span class="tool-icon">📄</span><span class="tool-label"><span class="acc-k">D</span>etalle</span>
             </button>
-            @unless($esVistaInactivos)
-                <button type="button" id="btnBajaFacturaToolbar" class="btn btn-baja tool-btn" data-toolbar-key="l" disabled title="Dar de baja factura (Alt+L)">
-                    <span class="tool-icon">🗑️</span><span class="tool-label"><span class="acc-k">B</span>aja</span>
-                </button>
-            @else
-                <button type="button" id="btnAltaFactura" class="btn btn-primario tool-btn" data-toolbar-key="r" disabled title="Reactivar factura (Alt+R)">
-                    <span class="tool-icon">↩️</span><span class="tool-label"><span class="acc-k">R</span>eactivar</span>
-                </button>
-            @endunless
+            <button type="button" id="btnBajaFacturaToolbar" class="btn btn-baja tool-btn" data-toolbar-key="l" disabled title="Eliminar factura (Alt+L)">
+                <span class="tool-icon">🗑️</span><span class="tool-label"><span class="acc-k">E</span>liminar</span>
+            </button>
         </div>
     </header>
 
