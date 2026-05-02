@@ -668,7 +668,35 @@ class FacturaController extends Controller
 
         try {
             $request->validate([
-                'pdf' => ['required', 'file', 'mimes:pdf', 'max:16384'],
+                'pdf' => ['required', 'file', 'max:16384', function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! $value instanceof \Illuminate\Http\UploadedFile) {
+                        return;
+                    }
+                    if (! $value->isValid()) {
+                        $fail(match ($value->getError()) {
+                            \UPLOAD_ERR_INI_SIZE, \UPLOAD_ERR_FORM_SIZE => 'El PDF supera el tamaño máximo permitido (16 MB). Revisá también upload_max_filesize y post_max_size en PHP.',
+                            \UPLOAD_ERR_PARTIAL => 'La subida quedó incompleta. Probá de nuevo.',
+                            default => 'No se pudo subir el archivo.',
+                        });
+
+                        return;
+                    }
+                    if (strtolower($value->getClientOriginalExtension()) !== 'pdf') {
+                        $fail('El archivo debe tener extensión .pdf');
+
+                        return;
+                    }
+                    $real = $value->getRealPath();
+                    if ($real === false || ! is_readable($real)) {
+                        $fail('No se pudo leer el archivo subido.');
+
+                        return;
+                    }
+                    $head = file_get_contents($real, false, null, 0, 5);
+                    if ($head === false || ! str_starts_with($head, '%PDF')) {
+                        $fail('El contenido no es un PDF válido.');
+                    }
+                }],
                 'numero_factura' => ['nullable', 'string', 'max:20'],
             ]);
         } catch (ValidationException $e) {

@@ -110,26 +110,35 @@
       if (anchor) anchor.dataset.pdfPreviewLoading = '1';
 
       const fd = new FormData();
-      fd.append('pdf', file);
+      fd.append('pdf', file, file.name || 'documento.pdf');
       const num = ($('#numero')?.value || '').trim();
       if (num) fd.append('numero_factura', num);
 
+      /** Sin Accept: application/json para que extensiones del navegador no alteren el FormData */
       const r = await fetch('/facturas/pdfs/vista-previa', {
         method: 'POST',
         headers: {
-          Accept: 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
           'X-CSRF-TOKEN': csrfToken(),
         },
+        credentials: 'same-origin',
         body: fd,
       });
 
-      const data = r.headers.get('content-type')?.includes('application/json') ? await r.json() : null;
+      const rawText = await r.text();
+      let data = null;
+      if (rawText.trim()) {
+        try {
+          data = JSON.parse(rawText);
+        } catch (_) {
+          /* ignore */
+        }
+      }
 
       if (!r.ok) {
         const msg =
           (data && typeof data.message === 'string' && data.message) ||
-          (data?.errors?.pdf && String(data.errors.pdf[0])) ||
+          (Array.isArray(data?.errors?.pdf) && data.errors.pdf[0] ? String(data.errors.pdf[0]) : '') ||
           `Error ${r.status}`;
         throw new Error(msg);
       }
