@@ -236,9 +236,6 @@
     };
 
     overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalModelo(); });
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') cerrarModalModelo();
-    });
 
     var selectedModeloInfo = document.getElementById('selectedModeloInfo');
     var btnEditarModelo = document.getElementById('btnEditarModelo');

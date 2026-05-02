@@ -1287,3 +1287,389 @@
         gap: 4px;
     }
 }
+
+/* Lista de PDF ya adjuntos (modal crear/editar) */
+.lista-adjuntos-factura {
+    list-style: none;
+    padding-left: 0;
+    margin: 0.35rem 0 0;
+}
+.lista-adjuntos-factura li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid #eee;
+}
+.lista-adjuntos-factura li:last-child {
+    border-bottom: none;
+}
+
+/* Bloque subida PDF factura */
+.factura-upload-pdfs-card {
+    margin-top: 1rem;
+    padding: 1rem 1.1rem;
+    background: linear-gradient(160deg, #f9fafb 0%, #f3f6f9 100%);
+    border: 1px solid #d8dee6;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.factura-upload-pdfs-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.factura-upload-pdfs-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.factura-upload-pdfs-title {
+    display: block;
+    font-size: 1rem;
+    color: #1a1a1a;
+}
+
+.factura-upload-pdfs-sub {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    color: #5a6570;
+    line-height: 1.35;
+}
+
+.factura-pdf-zone {
+    position: relative;
+    min-height: 88px;
+    border: 2px dashed #9db4c8;
+    border-radius: 8px;
+    background: #fff;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.factura-pdf-zone:hover:not(.factura-pdf-zone--disabled) {
+    border-color: #6b8cae;
+    background: #fbfdff;
+}
+
+.factura-pdf-zone--active:not(.factura-pdf-zone--disabled) {
+    border-color: #3d7a9a;
+    background: #f0f7fb;
+    box-shadow: inset 0 0 0 1px rgba(61, 122, 154, 0.2);
+}
+
+/* Cupos llenos: no se agregan más PDF, pero las × siguen clickeables siempre */
+.factura-pdf-zone--disabled {
+    cursor: default;
+}
+
+.factura-pdf-zone--disabled .factura-pdf-tile-remove {
+    cursor: pointer;
+}
+
+.factura-upload-pdfs-card--solo-mosaico {
+    margin-top: 0.85rem;
+    margin-bottom: 0;
+}
+
+.factura-upload-pdfs-card--solo-mosaico .factura-pdf-list-label {
+    margin-top: 0;
+}
+
+.factura-pdf-zone-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 0;
+}
+
+.factura-pdf-zone-body--empty {
+    min-height: 96px;
+}
+
+.factura-pdf-zone-body--empty .factura-pdf-tiles-grid:empty {
+    display: none;
+}
+
+.factura-pdf-zone-body--empty .factura-pdf-zone-add-hit {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88px;
+}
+
+/* Evita texto “Elegir o soltar…” al pie si algo pisa display:none de [hidden] */
+#facturaPdfZoneAddHit[hidden] {
+    display: none !important;
+}
+
+.factura-pdf-zone-add-hit {
+    display: block;
+    margin: 0;
+    cursor: pointer;
+}
+
+.factura-pdf-zone-add-hit .factura-pdf-zone-visual {
+    min-height: 72px;
+}
+
+.factura-pdf-input-sronly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+}
+
+.factura-pdf-input-sronly:focus {
+    outline: none;
+}
+
+/* Mosaico tipo adjunto WhatsApp */
+
+.factura-pdf-tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.factura-pdf-tiles-grid--detalle {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    padding: 0;
+    gap: 10px;
+}
+
+.factura-pdf-tile-wrap {
+    position: relative;
+}
+
+.factura-pdf-tile {
+    position: relative;
+    aspect-ratio: 1;
+    width: 100%;
+    margin: 0;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%);
+    border: 1px solid #cbd5e0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px 6px 6px;
+    text-decoration: none;
+    color: #1a202c;
+    box-sizing: border-box;
+    transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.factura-pdf-tile:hover {
+    transform: translateY(-1px);
+    border-color: #90cdf4;
+    box-shadow: 0 4px 10px rgba(45, 90, 120, 0.12);
+    color: #1a365d;
+}
+
+.factura-pdf-tile--detalle .factura-pdf-tile-name {
+    font-size: 0.69rem;
+    -webkit-line-clamp: 4;
+}
+
+.factura-pdf-tile-icon {
+    font-size: 1.85rem;
+    line-height: 1;
+}
+
+.factura-pdf-tile-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 0.52rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgba(45, 90, 120, 0.88);
+    color: #fff;
+    pointer-events: none;
+}
+
+.factura-pdf-tile-badge--nuevo {
+    background: rgba(34, 139, 34, 0.9);
+}
+
+.factura-pdf-tile-name {
+    margin-top: 6px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    word-break: break-word;
+}
+
+.factura-pdf-tile-meta {
+    margin-top: 4px;
+    font-size: 0.56rem;
+    color: #64748b;
+    text-align: center;
+    line-height: 1.15;
+}
+
+.factura-pdf-tile-remove {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(217, 83, 79, 0.95);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    z-index: 3;
+}
+
+.factura-pdf-tile-remove:hover {
+    filter: brightness(1.06);
+}
+
+.factura-pdf-tile:not(.factura-pdf-tile--add) {
+    padding-top: 18px;
+}
+
+.factura-pdf-tile--add {
+    border-style: dashed;
+    border-color: #93b8d3;
+    background: #fdfefe;
+    cursor: pointer;
+    justify-content: center;
+}
+
+.factura-pdf-tile--add:focus-within {
+    outline: 2px solid #4299e1;
+    outline-offset: 2px;
+}
+
+.factura-pdf-tile-add-plus {
+    font-size: 1.75rem;
+    font-weight: 300;
+    color: #2b6cb0;
+    line-height: 1;
+}
+
+.factura-pdf-tile-add-txt {
+    margin-top: 4px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #2c5282;
+    text-align: center;
+}
+
+.factura-pdf-zone-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.85rem;
+    min-height: 56px;
+    box-sizing: border-box;
+}
+
+.factura-pdf-zone-empty-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+.factura-pdf-zone-cta {
+    font-weight: 600;
+    color: #2c5282;
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+.factura-pdf-zone-hint {
+    margin-top: 0.25rem;
+    font-size: 0.78rem;
+    color: #718096;
+}
+
+.factura-pdf-cap-line {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: #4a5568;
+}
+
+.factura-pdf-list-label {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2d3748;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.factura-pdfs-locales-wrap,
+.factura-pdfs-guardados-wrap {
+    margin-top: 0.35rem;
+}
+
+.factura-pdf-local-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.35rem 0 0;
+}
+
+.factura-pdf-local-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.5rem;
+    margin-bottom: 0.35rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+.factura-pdf-local-nombre {
+    font-weight: 500;
+    color: #2b6cb0;
+    text-decoration: none;
+    max-width: 100%;
+    word-break: break-word;
+}
+
+.factura-pdf-local-nombre:hover {
+    text-decoration: underline;
+}
+
+.factura-pdf-local-quitar {
+    margin-left: auto;
+}

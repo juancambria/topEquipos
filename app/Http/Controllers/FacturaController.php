@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Factura;
 use App\Models\FacturaDetalle;
+use App\Models\FacturaPdf;
 use App\Models\Proveedor;
 use App\Models\Equipo;
 use App\Models\Marca;
@@ -13,9 +14,14 @@ use App\Models\Ubicacion;
 use App\Models\Sector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class FacturaController extends Controller
 {
+    /** Cantidad máxima de PDF por factura (ya guardados + nuevos en un mismo guardado). */
+    private const MAX_PDFS_POR_FACTURA = 5;
+
     public function index(Request $request)
     {
         $query = Factura::with('proveedor');
@@ -60,7 +66,7 @@ class FacturaController extends Controller
     {
         try {
             $factura = Factura::with('proveedor')->findOrFail($id);
-            $factura->load('detalles');
+            $factura->load(['detalles', 'pdfs']);
             
             // Filtrar solo detalles relevantes para equipos
             $detallesCompraEquipo = $factura->detalles->filter(fn($d) => $d->operacion === 'compra' && $d->de === 'Equipo');
@@ -83,6 +89,8 @@ class FacturaController extends Controller
                 ];
             });
             
+            $detallesOrdenados = $factura->detalles->sortBy('renglonFactura')->values();
+
             return response()->json([
                 'idFactura' => $factura->idFactura,
                 'numero' => $factura->numero,
@@ -101,6 +109,24 @@ class FacturaController extends Controller
                 'iva21' => $factura->iva21,
                 'total' => $factura->total,
                 'estado' => $factura->estado,
+                'detalles' => $detallesOrdenados->map(static fn ($d) => [
+                    'idFacturaDet' => $d->idFacturaDet,
+                    'operacion' => $d->operacion,
+                    'de' => $d->de,
+                    'cantidad' => $d->cantidad,
+                    'concepto' => $d->concepto,
+                    'precioUnitario' => $d->precioUnitario,
+                    'porcentajeIva' => $d->porcentajeIva,
+                    'porcentajeDto' => $d->porcentajeDto,
+                    'subtotal' => $d->subtotal,
+                    'obra' => $d->obra,
+                ]),
+                'pdfs' => $factura->pdfs->map(static fn ($p) => [
+                    'idFacturaPdf' => $p->idFacturaPdf,
+                    'nombre_original' => $p->nombre_original,
+                    'tamano_bytes' => $p->tamano_bytes,
+                    'created_at' => $p->created_at?->format('Y-m-d H:i'),
+                ]),
                 'detalles_con_equipos' => $detallesConEquipos,
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -127,7 +153,7 @@ class FacturaController extends Controller
             'descripcion_contenido' => $this->cleanTextarea($request->input('descripcion_contenido')),
         ]);
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'numero' => 'required|string|max:20|unique:facturas,numero',
             'fecha' => 'nullable|date',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
@@ -148,7 +174,7 @@ class FacturaController extends Controller
             'detalles.*.porcentajeDto' => 'nullable|numeric|min:0|max:100',
             'detalles.*.subtotal' => 'nullable|numeric|min:0',
             'detalles.*.obra' => 'nullable|string|max:15',
-        ]);
+        ], $this->facturaPdfUploadRules()));
 
         DB::beginTransaction();
 
@@ -210,9 +236,24 @@ class FacturaController extends Controller
 
             // Si hay equipos por crear, redirigir con datos para mostrar modales
             session()->forget(['equiposPorCrear', 'idFactura', 'idProveedor']);
-            
-            return redirect()->to(url()->previous())
+
+            $warningPdf = null;
+            try {
+                $this->persistFacturaPdfsDesdeRequest($request, (int) $factura->idFactura);
+            } catch (ValidationException $ve) {
+                $errs = $ve->errors();
+                $warningPdf = $errs['pdfs'][0]
+                    ?? (\is_array($errs) ? collect($errs)->flatten()->first() : null)
+                    ?? 'No se pudieron adjuntar los PDF.';
+            } catch (\Throwable $ePdf) {
+                report($ePdf);
+                $warningPdf = 'La factura quedó registrada, pero no se pudieron adjuntar uno o más PDF. Podés intentar cargarlos al editar la factura.';
+            }
+
+            $redir = redirect()->to(url()->previous())
                 ->with('success', 'Factura creada correctamente.');
+
+            return $warningPdf ? $redir->with('warning', $warningPdf) : $redir;
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -236,7 +277,7 @@ class FacturaController extends Controller
             'descripcion_contenido' => $this->cleanTextarea($request->input('descripcion_contenido')),
         ]);
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'numero' => 'required|string|max:20|unique:facturas,numero,' . $id . ',idFactura',
             'fecha' => 'nullable|date',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
@@ -257,7 +298,7 @@ class FacturaController extends Controller
             'detalles.*.porcentajeDto' => 'nullable|numeric|min:0|max:100',
             'detalles.*.subtotal' => 'nullable|numeric|min:0',
             'detalles.*.obra' => 'nullable|string|max:15',
-        ]);
+        ], $this->facturaPdfUploadRules()));
 
         DB::beginTransaction();
 
@@ -296,7 +337,22 @@ class FacturaController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', 'Factura actualizada correctamente');
+            $warningPdf = null;
+            try {
+                $this->persistFacturaPdfsDesdeRequest($request, (int) $factura->idFactura);
+            } catch (ValidationException $ve) {
+                $errs = $ve->errors();
+                $warningPdf = $errs['pdfs'][0]
+                    ?? (\is_array($errs) ? collect($errs)->flatten()->first() : null)
+                    ?? 'No se pudieron adjuntar los PDF.';
+            } catch (\Throwable $ePdf) {
+                report($ePdf);
+                $warningPdf = 'Los cambios se guardaron, pero no se pudieron adjuntar uno o más PDF.';
+            }
+
+            $redir = redirect()->back()->with('success', 'Factura actualizada correctamente');
+
+            return $warningPdf ? $redir->with('warning', $warningPdf) : $redir;
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Error al actualizar la factura: ' . $e->getMessage());
@@ -479,5 +535,110 @@ class FacturaController extends Controller
         session()->forget('idProveedor');
         
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Opcional: hasta 5 PDF por factura en total; en un envío no más de los que quepan (16 MB c/u).
+     *
+     * @return array<string, mixed>
+     */
+    protected function facturaPdfUploadRules(): array
+    {
+        return [
+            'pdfs' => ['nullable', 'array', 'max:' . self::MAX_PDFS_POR_FACTURA],
+            'pdfs.*' => ['file', 'mimes:pdf', 'max:16384'],
+        ];
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function assertTotalPdfsFacturaNoExcede(int $idFactura, int $nuevosValidos): void
+    {
+        if ($nuevosValidos < 1) {
+            return;
+        }
+
+        $ya = FacturaPdf::where('idFactura', $idFactura)->count();
+
+        if ($ya + $nuevosValidos > self::MAX_PDFS_POR_FACTURA) {
+            throw ValidationException::withMessages([
+                'pdfs' => 'Cada factura admite como máximo ' . self::MAX_PDFS_POR_FACTURA
+                    . ' archivos PDF en total (incluye los ya guardados).',
+            ]);
+        }
+    }
+
+    /**
+     * Persiste PDFs subidos después de tener id de factura.
+     *
+     * @throws \Throwable
+     */
+    protected function persistFacturaPdfsDesdeRequest(Request $request, int $idFactura): void
+    {
+        $raw = $request->file('pdfs');
+
+        /** @var list<\Illuminate\Http\UploadedFile>|array<int, mixed> */
+        $uploads = match (true) {
+            $raw instanceof \Illuminate\Http\UploadedFile => [$raw],
+            is_array($raw) => array_values($raw),
+            default => [],
+        };
+
+        $validUploads = array_values(array_filter(
+            $uploads,
+            static fn ($f) => $f instanceof \Illuminate\Http\UploadedFile && $f->isValid()
+        ));
+
+        if ($validUploads === []) {
+            return;
+        }
+
+        $this->assertTotalPdfsFacturaNoExcede($idFactura, count($validUploads));
+
+        foreach ($validUploads as $file) {
+            $dir = 'facturas/' . $idFactura . '/pdfs';
+            $storedPath = $file->store($dir, 'local');
+
+            FacturaPdf::create([
+                'idFactura' => $idFactura,
+                'ruta_archivo' => $storedPath,
+                'nombre_original' => substr($file->getClientOriginalName(), 0, 255),
+                'tamano_bytes' => $file->getSize(),
+            ]);
+        }
+    }
+
+    public function descargarPdf($id, $pdfId)
+    {
+        $pdf = FacturaPdf::where('idFactura', $id)
+            ->where('idFacturaPdf', $pdfId)
+            ->firstOrFail();
+
+        if (!Storage::disk('local')->exists($pdf->ruta_archivo)) {
+            abort(404, 'Archivo no encontrado');
+        }
+
+        return Storage::disk('local')->response(
+            $pdf->ruta_archivo,
+            $pdf->nombre_original,
+            ['Content-Type' => 'application/pdf'],
+            'inline'
+        );
+    }
+
+    public function eliminarPdf(Request $request, $id, $pdfId)
+    {
+        $pdf = FacturaPdf::where('idFactura', $id)
+            ->where('idFacturaPdf', $pdfId)
+            ->firstOrFail();
+
+        $pdf->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->back()->with('success', 'PDF eliminado correctamente');
     }
 }

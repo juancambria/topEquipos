@@ -1,6 +1,9 @@
 /**
  * Enfoque automático y ciclo de Tab (focus trap) dentro de modales.
  * Mantiene el foco dentro del overlay/modal mientras esté visible.
+ *
+ * Cerrar como la «×» del modal al frente: Alt+Mayús+Retroceso o Alt+Mayús+C
+ * (menos sensible a pulsaciones accidentales que Alt+X). Esc también cierra si hay ×.
  */
 (function () {
   'use strict';
@@ -76,6 +79,22 @@
     return false;
   }
 
+  /** Modal visible más arriba (z-index); incluye confirmación, para recuperar el Tab si el foco quedó fuera. */
+  function getTopVisibleModalForTab() {
+    var nodes = document.querySelectorAll(MODAL_ROOT);
+    var list = [];
+    for (var i = 0; i < nodes.length; i++) {
+      if (isModalVisible(nodes[i])) list.push(nodes[i]);
+    }
+    if (list.length === 0) return null;
+    list.sort(function (a, b) {
+      var za = Number(window.getComputedStyle(a).zIndex) || 0;
+      var zb = Number(window.getComputedStyle(b).zIndex) || 0;
+      return zb - za;
+    });
+    return list[0];
+  }
+
   function getFocusableInPageRoot(pageRoot) {
     return getFocusable(pageRoot).filter(function (el) {
       var modal = el.closest && el.closest(MODAL_ROOT);
@@ -101,6 +120,61 @@
     }
   }
 
+  /** Mismo efecto que la «×» del modal superior (no hace nada si el frente es solo Sí/No sin cruz). */
+  var MODAL_CLOSE_BTN_SELECTOR =
+    'button.modal-cerrar, .modal-header button.close, button.close';
+
+  function isVisibleCloseButton(btn) {
+    if (!btn || btn.nodeType !== 1) return false;
+    if (btn.disabled || btn.getAttribute('aria-hidden') === 'true') return false;
+    var s = window.getComputedStyle(btn);
+    if (s.display === 'none' || s.visibility === 'hidden') return false;
+    if (parseFloat(s.opacity || '1') === 0) return false;
+    var rects = btn.getClientRects();
+    return !!(rects && rects.length > 0);
+  }
+
+  function findModalCloseButton(root) {
+    if (!root || !root.querySelectorAll) return null;
+    var nodes = root.querySelectorAll(MODAL_CLOSE_BTN_SELECTOR);
+    for (var i = 0; i < nodes.length; i++) {
+      if (isVisibleCloseButton(nodes[i])) return nodes[i];
+    }
+    return null;
+  }
+
+  function onModalCloseShortcut(e) {
+    if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey || e.repeat) return;
+    var altShiftBack = e.key === 'Backspace';
+    var altShiftC = e.key === 'c' || e.key === 'C' || e.code === 'KeyC';
+    if (!altShiftBack && !altShiftC) return;
+
+    var topModal = getTopVisibleModalForTab();
+    if (!topModal) return;
+
+    var closeBtn = findModalCloseButton(topModal);
+    if (!closeBtn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    closeBtn.click();
+  }
+
+  function onEscapeCloseTopModal(e) {
+    if (e.key !== 'Escape' || e.repeat) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+    var topModal = getTopVisibleModalForTab();
+    if (!topModal) return;
+
+    var closeBtn = findModalCloseButton(topModal);
+    if (!closeBtn) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeBtn.click();
+  }
+
   function onDocumentKeydown(e) {
     onFooterAltShortcuts(e);
     if (e.key !== 'Tab') return;
@@ -110,8 +184,22 @@
       cycleTabTrap(modalList, e);
       return;
     }
+    if (hasAnyVisibleModal()) {
+      var topModal = getTopVisibleModalForTab();
+      if (topModal) {
+        var trapList = getFocusable(topModal);
+        if (trapList.length > 0) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            trapList[trapList.length - 1].focus();
+          } else {
+            trapList[0].focus();
+          }
+        }
+      }
+      return;
+    }
     if (!document.body.classList.contains('window-embedded')) return;
-    if (hasAnyVisibleModal()) return;
     var pageRoot = document.querySelector('.embedded-page');
     if (!pageRoot) return;
     var ae = document.activeElement;
@@ -368,7 +456,7 @@
   }
 
   function onFooterAltShortcuts(e) {
-    if (!e.altKey || e.ctrlKey || e.metaKey || e.repeat || e.defaultPrevented) return;
+    if (!e.altKey || e.shiftKey || e.ctrlKey || e.metaKey || e.repeat || e.defaultPrevented) return;
     if (toastConfirmOverlayActive()) return;
 
     var ch = getCharFromAltFooterEvent(e);
@@ -452,6 +540,14 @@
     }, FOCUS_DELAY_MS);
   }
 
+  /** Tras rellenar un modal por AJAX: volver a enfocar si el foco sigue fuera del overlay. */
+  window.__refocusModal = function (modalOrId) {
+    var modal =
+      typeof modalOrId === 'string' ? document.getElementById(modalOrId) : modalOrId;
+    if (!modal || !modal.matches || !modal.matches(MODAL_ROOT)) return;
+    tryInitialFocus(modal);
+  };
+
   function onMutations(mutations) {
     for (var i = 0; i < mutations.length; i++) {
       var m = mutations[i];
@@ -480,6 +576,8 @@
   }
 
   document.addEventListener('keydown', onDocumentKeydown, true);
+  document.addEventListener('keydown', onModalCloseShortcut, true);
+  document.addEventListener('keydown', onEscapeCloseTopModal, true);
 
   function scheduleEmbeddedInitialFocus() {
     setTimeout(tryEmbeddedPageInitialFocus, FOCUS_DELAY_MS);

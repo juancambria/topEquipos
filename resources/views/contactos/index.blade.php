@@ -72,7 +72,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalContactoTitulo">Contacto</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalContacto()" aria-label="Cerrar">&times;</button>
+                <button type="button" class="modal-cerrar" onclick="cerrarModalContacto()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formContacto" method="POST" class="modal-sector-body">
             @csrf
@@ -88,24 +88,24 @@
             </div>
             <div class="form-grupo">
                 <label for="contactoNombre">Nombre</label>
-                <input type="text" id="contactoNombre" name="nombre" required autocomplete="off">
+                <input type="text" id="contactoNombre" name="nombre" required autocomplete="off" maxlength="30">
             </div>
 
             <div class="form-grupo">
                 <label for="contactoTelefono">Teléfono</label>
-                <input type="text" id="contactoTelefono" name="telefono" autocomplete="off">
+                <input type="text" id="contactoTelefono" name="telefono" autocomplete="off" maxlength="15" inputmode="tel">
             </div>
             <div class="form-grupo">
                 <label for="contactoMail">Mail</label>
-                <input type="email" id="contactoMail" name="mail" autocomplete="off">
+                <input type="email" id="contactoMail" name="mail" autocomplete="off" maxlength="28" title="Máximo 28 caracteres">
             </div>
             <div class="form-grupo">
                 <label for="contactoCargo">Cargo</label>
-                <input type="text" id="contactoCargo" name="cargo" autocomplete="off">
+                <input type="text" id="contactoCargo" name="cargo" autocomplete="off" maxlength="18">
             </div>
             <div class="form-grupo">
                 <label for="contactoObservacion">Observación</label>
-                <input type="text" id="contactoObservacion" name="observacion" autocomplete="off">
+                <input type="text" id="contactoObservacion" name="observacion" autocomplete="off" maxlength="42">
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalContacto()">Cancelar</button>

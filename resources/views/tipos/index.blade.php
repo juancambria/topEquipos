@@ -58,7 +58,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalTipoTitulo">Tipo</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalTipo()" aria-label="Cerrar">&times;</button>
+                <button type="button" class="modal-cerrar" onclick="cerrarModalTipo()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formTipo" method="POST" class="modal-sector-body">
             @csrf

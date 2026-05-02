@@ -140,7 +140,13 @@
     </script>
 @endif
 
-<!-- Modales globales de entidades -->
+@if(session('warning'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            mostrarToast("{{ session('warning') }}", 'warning');
+        });
+    </script>
+@endif
 @include('partials.modales-entidades')
 
 @if(session('equiposPorCrear'))

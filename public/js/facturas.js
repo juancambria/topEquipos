@@ -12,7 +12,14 @@
     renglonPendienteActualIndex: null,
     confirmFilaPendiente: null,
     selectedFacturaId: null,
+    pdfsLocalesCola: [],
+    pdfsLocalesUrls: [],
+    pdfsServidorEnModal: [],
+    facturaIdParaPdfsServidor: null,
   };
+
+  const FACTURA_MAX_PDFS = 5;
+  const FACTURA_MAX_PDF_BYTES = 16 * 1024 * 1024;
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -51,6 +58,364 @@
     return d ? d.toLocaleDateString('es-AR') : '—';
   };
 
+  function formatBytesFacturaPdf(n) {
+    const num = typeof n === 'number' ? n : parseInt(n, 10);
+    if (!Number.isFinite(num) || num <= 0) return '';
+    const u = ['B', 'KB', 'MB', 'GB'];
+    let v = num;
+    let i = 0;
+    while (v >= 1024 && i < u.length - 1) {
+      v /= 1024;
+      i += 1;
+    }
+    return `(${v < 10 && i > 0 ? v.toFixed(1) : Math.round(v)} ${u[i]})`;
+  }
+
+  function formatBytesFacturaPdfSinParentesis(n) {
+    const s = formatBytesFacturaPdf(n);
+    return s.replace(/^\(/, '').replace(/\)$/, '');
+  }
+
+  function renderAdjuntosExistentesFactura(pdfs, facturaId) {
+    const idNum = Number(facturaId);
+    if (!Number.isFinite(idNum) || !Array.isArray(pdfs) || pdfs.length === 0) {
+      state.pdfsServidorEnModal = [];
+      state.facturaIdParaPdfsServidor = null;
+    } else {
+      state.pdfsServidorEnModal = pdfs.map((p) => ({
+        idFacturaPdf: p.idFacturaPdf,
+        nombre_original: p.nombre_original,
+        tamano_bytes: p.tamano_bytes,
+      }));
+      state.facturaIdParaPdfsServidor = idNum;
+    }
+    pintarMosaicoPdfsFacturaModal();
+  }
+
+  async function eliminarAdjuntoPdfFactura(facturaId, pdfId) {
+    const ok = await confirmarAccion({
+      titulo: 'Quitar PDF',
+      texto: '¿Eliminar este archivo adjunto de la factura?',
+      textoAceptar: 'Eliminar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    });
+
+    if (!ok) return;
+
+    try {
+      const r = await fetch(`/facturas/${facturaId}/pdfs/${pdfId}`, {
+        method: 'DELETE',
+        headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' }),
+      });
+      const data = r.headers.get('content-type')?.includes('application/json') ? await r.json() : null;
+      if (!r.ok && !data?.success) {
+        throw new Error(`Error ${r.status}`);
+      }
+
+      toast('Adjunto eliminado', 'success');
+      state.pdfsServidorEnModal = state.pdfsServidorEnModal.filter(
+        (x) => Number(x.idFacturaPdf) !== Number(pdfId),
+      );
+      pintarMosaicoPdfsFacturaModal();
+    } catch (e) {
+      toast(`No se pudo eliminar: ${e.message}`, 'error');
+    }
+  }
+
+  function countPdfAdjuntosServidor() {
+    return state.pdfsServidorEnModal.length;
+  }
+
+  function cupoPdfsRestante() {
+    return Math.max(0, FACTURA_MAX_PDFS - countPdfAdjuntosServidor() - state.pdfsLocalesCola.length);
+  }
+
+  function esPdfValidoArchivo(f) {
+    if (!f || !f.size) return false;
+    if (f.size > FACTURA_MAX_PDF_BYTES) return false;
+    return f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+  }
+
+  function syncInputFilesDesdeColaFactura() {
+    const input = document.getElementById('factura_pdfs');
+    if (!input) return;
+    const dt = new DataTransfer();
+    state.pdfsLocalesCola.forEach((f) => dt.items.add(f));
+    input.files = dt.files;
+  }
+
+  function vaciarColaPdfsLocalesSinRepintado() {
+    state.pdfsLocalesUrls.forEach((u) => URL.revokeObjectURL(u));
+    state.pdfsLocalesCola = [];
+    state.pdfsLocalesUrls = [];
+    syncInputFilesDesdeColaFactura();
+  }
+
+  function crearTilePdfServidorFactura(p, idFactura) {
+    const wrap = document.createElement('div');
+    wrap.className = 'factura-pdf-tile-wrap';
+
+    const a = document.createElement('a');
+    a.className = 'factura-pdf-tile';
+    a.href = `/facturas/${idFactura}/pdfs/${p.idFacturaPdf}/descargar`;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.title = `Abrir: ${p.nombre_original || 'PDF'}`;
+
+    const badge = document.createElement('span');
+    badge.className = 'factura-pdf-tile-badge';
+    badge.textContent = 'Guardado';
+
+    const icon = document.createElement('span');
+    icon.className = 'factura-pdf-tile-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '📄';
+
+    const name = document.createElement('span');
+    name.className = 'factura-pdf-tile-name';
+    name.textContent = p.nombre_original || 'PDF';
+
+    const meta = document.createElement('span');
+    meta.className = 'factura-pdf-tile-meta';
+    meta.textContent = formatBytesFacturaPdfSinParentesis(p.tamano_bytes);
+
+    a.appendChild(badge);
+    a.appendChild(icon);
+    a.appendChild(name);
+    a.appendChild(meta);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'factura-pdf-tile-remove';
+    btn.textContent = '×';
+    btn.setAttribute('aria-label', 'Quitar PDF');
+    btn.title = 'Quitar';
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      eliminarAdjuntoPdfFactura(idFactura, p.idFacturaPdf);
+    });
+
+    wrap.appendChild(a);
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
+  function crearTilePdfLocalFactura(file, idx) {
+    const wrap = document.createElement('div');
+    wrap.className = 'factura-pdf-tile-wrap';
+
+    const url = state.pdfsLocalesUrls[idx];
+    const a = document.createElement('a');
+    a.className = 'factura-pdf-tile';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.title = 'Abrir en otra pestaña';
+
+    const badge = document.createElement('span');
+    badge.className = 'factura-pdf-tile-badge factura-pdf-tile-badge--nuevo';
+    badge.textContent = 'Nuevo';
+
+    const icon = document.createElement('span');
+    icon.className = 'factura-pdf-tile-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '📄';
+
+    const name = document.createElement('span');
+    name.className = 'factura-pdf-tile-name';
+    name.textContent = file.name;
+
+    const meta = document.createElement('span');
+    meta.className = 'factura-pdf-tile-meta';
+    meta.textContent = formatBytesFacturaPdfSinParentesis(file.size);
+
+    a.appendChild(badge);
+    a.appendChild(icon);
+    a.appendChild(name);
+    a.appendChild(meta);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'factura-pdf-tile-remove';
+    btn.textContent = '×';
+    btn.setAttribute('aria-label', 'Quitar de la selección');
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      quitarPdfLocalFactura(idx);
+    });
+
+    wrap.appendChild(a);
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
+  function crearTileAnadirPdfFactura() {
+    const lab = document.createElement('label');
+    lab.className = 'factura-pdf-tile factura-pdf-tile--add';
+    lab.setAttribute('for', 'factura_pdfs');
+    lab.tabIndex = 0;
+    lab.innerHTML = `
+      <span class="factura-pdf-tile-add-plus">+</span>
+      <span class="factura-pdf-tile-add-txt">Añadir PDF</span>`;
+    return lab;
+  }
+
+  function pintarMosaicoPdfsFacturaModal() {
+    const grid = document.getElementById('facturaPdfTilesMerged');
+    const addHit = document.getElementById('facturaPdfZoneAddHit');
+    const zoneBody = document.getElementById('facturaPdfZoneBody');
+    if (!grid || !addHit) return;
+
+    grid.innerHTML = '';
+
+    const idFactura = state.facturaIdParaPdfsServidor;
+    if (idFactura != null && idFactura !== '') {
+      state.pdfsServidorEnModal.forEach((p) => {
+        grid.appendChild(crearTilePdfServidorFactura(p, idFactura));
+      });
+    }
+
+    state.pdfsLocalesCola.forEach((file, idx) => {
+      grid.appendChild(crearTilePdfLocalFactura(file, idx));
+    });
+
+    const total = state.pdfsServidorEnModal.length + state.pdfsLocalesCola.length;
+    const cupo = cupoPdfsRestante();
+
+    if (total === 0) {
+      addHit.hidden = false;
+      zoneBody?.classList.add('factura-pdf-zone-body--empty');
+    } else {
+      addHit.hidden = true;
+      zoneBody?.classList.remove('factura-pdf-zone-body--empty');
+      if (cupo > 0) {
+        grid.appendChild(crearTileAnadirPdfFactura());
+      }
+    }
+
+    actualizarCapacidadTextoFacturaPdfs();
+  }
+
+  function limpiarColaPdfsLocalesFactura() {
+    vaciarColaPdfsLocalesSinRepintado();
+    pintarMosaicoPdfsFacturaModal();
+  }
+
+  function agregarPdfsALaColaFactura(fileListOrArray) {
+    const arr = Array.from(fileListOrArray || []);
+    const invalidosTam = arr.filter((f) => f && f.size > FACTURA_MAX_PDF_BYTES);
+    if (invalidosTam.length) toast('Uno o más archivos superan 16 MB.', 'warning');
+
+    const validos = arr.filter(esPdfValidoArchivo);
+    const noPdf = arr.filter((f) => f && f.size > 0 && f.size <= FACTURA_MAX_PDF_BYTES && !esPdfValidoArchivo(f));
+    if (noPdf.length) toast('Solo se admiten archivos PDF.', 'warning');
+
+    let cupo = cupoPdfsRestante();
+    if (cupo <= 0) {
+      if (validos.length) toast(`Ya alcanzaste el máximo de ${FACTURA_MAX_PDFS} PDF por factura.`, 'warning');
+      return;
+    }
+
+    if (validos.length > cupo) {
+      toast(`Solo se agregaron ${cupo} archivo(s): el máximo es ${FACTURA_MAX_PDFS} PDF por factura (total).`, 'warning');
+    }
+
+    validos.slice(0, cupo).forEach((f) => {
+      state.pdfsLocalesCola.push(f);
+      state.pdfsLocalesUrls.push(URL.createObjectURL(f));
+    });
+
+    syncInputFilesDesdeColaFactura();
+    pintarMosaicoPdfsFacturaModal();
+  }
+
+  function quitarPdfLocalFactura(idx) {
+    const u = state.pdfsLocalesUrls[idx];
+    if (u) URL.revokeObjectURL(u);
+    state.pdfsLocalesCola.splice(idx, 1);
+    state.pdfsLocalesUrls.splice(idx, 1);
+    syncInputFilesDesdeColaFactura();
+    pintarMosaicoPdfsFacturaModal();
+  }
+
+  function actualizarCapacidadTextoFacturaPdfs() {
+    const el = document.getElementById('facturaPdfsCapacidadTexto');
+    const zone = document.getElementById('facturaPdfDropzone');
+    const input = document.getElementById('factura_pdfs');
+
+    const usados = countPdfAdjuntosServidor() + state.pdfsLocalesCola.length;
+    if (el) {
+      el.textContent = `${usados} / ${FACTURA_MAX_PDFS} PDF · hasta 16 MB c/u`;
+    }
+
+    const lleno = cupoPdfsRestante() <= 0;
+    if (zone) {
+      zone.classList.toggle('factura-pdf-zone--disabled', lleno);
+    }
+    if (input) {
+      input.disabled = lleno;
+    }
+  }
+
+  function initFacturaPdfZona() {
+    const input = document.getElementById('factura_pdfs');
+    const zone = document.getElementById('facturaPdfDropzone');
+    if (!input || !zone || zone.dataset.facturasPdfBound === '1') return;
+    zone.dataset.facturasPdfBound = '1';
+
+    input.addEventListener('change', () => {
+      if (input.files?.length) {
+        agregarPdfsALaColaFactura(input.files);
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach((ev) => {
+      zone.addEventListener(
+        ev,
+        (e) => {
+          if (cupoPdfsRestante() <= 0) return;
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.add('factura-pdf-zone--active');
+        },
+        true
+      );
+    });
+
+    ['dragleave'].forEach((ev) => {
+      zone.addEventListener(
+        ev,
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.remove('factura-pdf-zone--active');
+        },
+        true
+      );
+    });
+
+    zone.addEventListener(
+      'drop',
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove('factura-pdf-zone--active');
+        if (cupoPdfsRestante() <= 0) {
+          toast(`Máximo ${FACTURA_MAX_PDFS} PDF por factura.`, 'warning');
+          return;
+        }
+        const files = e.dataTransfer?.files;
+        if (files?.length) agregarPdfsALaColaFactura(files);
+      },
+      true
+    );
+
+    actualizarCapacidadTextoFacturaPdfs();
+  }
+
   const addDaysToISO = (baseIso, days) => {
     const d = toDateSafe(baseIso);
     if (!d) return '';
@@ -86,7 +451,7 @@
     diasInput.value = raw;
     const vto = addDaysToISO(baseInput.value, dias);
     vtoInput.value = vto;
-    preview.textContent = `(vence: ${formatDateAr(vto)})`;
+    preview.innerHTML = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vence: ' + formatDateAr(vto) + ')';
   }
 
 function setGarantiaFactura(baseIso, vtoIso = '') {
@@ -146,7 +511,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       <div class="modal-sector modal-confirm-accion">
         <div class="modal-sector-header">
           <h2 id="confirmAccionTitulo">Confirmación</h2>
-          <button type="button" class="modal-cerrar" id="confirmAccionCerrar" aria-label="Cerrar">&times;</button>
+          <button type="button" class="modal-cerrar" id="confirmAccionCerrar" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <div class="modal-sector-body">
           <p id="confirmAccionTexto" style="margin: 0; white-space: pre-line;"></p>
@@ -175,7 +540,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       <div class="modal-sector" style="max-width: 1100px; width: min(1100px, 96vw); max-height: 92vh;">
         <div class="modal-sector-header">
           <h2>Detalles de Factura</h2>
-          <button type="button" class="modal-cerrar" id="facturaDetalleCerrar" aria-label="Cerrar">&times;</button>
+          <button type="button" class="modal-cerrar" id="facturaDetalleCerrar" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <div class="modal-sector-body" id="facturaDetalleContentDynamic" style="overflow:auto;"></div>
         <div class="modal-sector-footer">
@@ -943,6 +1308,9 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     resetearTotales();
     generarNumeroFactura();
 
+    vaciarColaPdfsLocalesSinRepintado();
+    renderAdjuntosExistentesFactura([], null);
+
     setModalVisible('modalFactura', true);
   }
 
@@ -999,6 +1367,9 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     recalcularTotales();
 
+    vaciarColaPdfsLocalesSinRepintado();
+    renderAdjuntosExistentesFactura(data.pdfs || [], id);
+
     const title = document.getElementById('modalFacturaTitle');
     const form = document.getElementById('formFactura');
     const submit = document.getElementById('btnSubmitFactura');
@@ -1051,6 +1422,31 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       })
       .then((data) => {
         if (data.error) throw new Error(data.message || data.error);
+
+        const listaPdfs = Array.isArray(data.pdfs) ? data.pdfs : [];
+        const pdfDetalleMosaicoHtml =
+          listaPdfs.length === 0
+            ? ''
+            : (() => {
+                const tiles = listaPdfs
+                  .map((p) => {
+                    const peso = formatBytesFacturaPdfSinParentesis(p.tamano_bytes);
+                    const meta = [peso, p.created_at ? String(p.created_at) : ''].filter(Boolean).join(' · ');
+                    const tit = escapeHtml(p.nombre_original || 'PDF');
+                    return `
+                    <a class="factura-pdf-tile factura-pdf-tile--detalle" href="/facturas/${data.idFactura}/pdfs/${p.idFacturaPdf}/descargar" target="_blank" rel="noopener" title="Abrir en otra pestaña">
+                      <span class="factura-pdf-tile-icon" aria-hidden="true">📄</span>
+                      <span class="factura-pdf-tile-name">${tit}</span>
+                      <span class="factura-pdf-tile-meta">${escapeHtml(meta)}</span>
+                    </a>`;
+                  })
+                  .join('');
+                return `
+                <div class="factura-upload-pdfs-card factura-upload-pdfs-card--solo-mosaico">
+                  <span class="factura-pdf-list-label">PDF de la factura</span>
+                  <div class="factura-pdf-tiles-grid factura-pdf-tiles-grid--detalle">${tiles}</div>
+                </div>`;
+              })();
 
         let detailsReadonly = '';
         let detallesConEquipos = data.detalles_con_equipos || [];
@@ -1211,6 +1607,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
                   <textarea class="form-control" rows="2" readonly>${escapeHtml(data.observacion || '')}</textarea>
                 </div>
               </div>
+              ${pdfDetalleMosaicoHtml}
             </div>
           </div>
         `;
@@ -2351,6 +2748,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     window.idProveedorActual = window.idProveedorActual || null;
 
     initFormularioFactura();
+    initFacturaPdfZona();
     initFormularioProveedorFactura();
     initFormularioEquipoDesdeFactura();
     initConfirmacionFormBaja();

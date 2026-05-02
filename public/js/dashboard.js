@@ -539,6 +539,13 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             bringToFront(windowEl);
 
+            const pointerId = event.pointerId;
+            try {
+                handle.setPointerCapture(pointerId);
+            } catch {
+                /* noop: seguimos con listeners en el handle */
+            }
+
             const startX = event.clientX;
             const startY = event.clientY;
             const startWidth = windowEl.offsetWidth;
@@ -548,10 +555,15 @@ document.addEventListener('DOMContentLoaded', () => {
             let frameRequest = null;
             let pendingWidth = startWidth;
             let pendingHeight = startHeight;
+            let ended = false;
 
             windowEl.classList.add('is-resizing');
 
             const onMove = moveEvent => {
+                if (moveEvent.pointerId !== pointerId) {
+                    return;
+                }
+
                 pendingWidth = Math.max(520, Math.min(startWidth + (moveEvent.clientX - startX), desktop.clientWidth - startLeft));
                 pendingHeight = Math.max(320, Math.min(startHeight + (moveEvent.clientY - startY), desktop.clientHeight - startTop));
 
@@ -573,7 +585,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             };
 
-            const onUp = () => {
+            const endResize = () => {
+                if (ended) {
+                    return;
+                }
+                ended = true;
+
                 if (frameRequest !== null) {
                     window.cancelAnimationFrame(frameRequest);
                     frameRequest = null;
@@ -589,12 +606,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 windowEl.classList.remove('is-resizing');
                 updateWindowDensity(windowEl);
-                window.removeEventListener('pointermove', onMove);
-                window.removeEventListener('pointerup', onUp);
+                handle.removeEventListener('pointermove', onMove);
+                handle.removeEventListener('pointerup', onUp);
+                handle.removeEventListener('pointercancel', onUp);
+                try {
+                    if (handle.hasPointerCapture(pointerId)) {
+                        handle.releasePointerCapture(pointerId);
+                    }
+                } catch {
+                    /* noop */
+                }
             };
 
-            window.addEventListener('pointermove', onMove);
-            window.addEventListener('pointerup', onUp);
+            const onUp = upEvent => {
+                if (upEvent.pointerId !== pointerId) {
+                    return;
+                }
+                endResize();
+            };
+
+            handle.addEventListener('pointermove', onMove);
+            handle.addEventListener('pointerup', onUp);
+            handle.addEventListener('pointercancel', onUp);
         });
     };
 

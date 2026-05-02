@@ -83,13 +83,13 @@ $query = Proveedor::where('estado', 'baja');
         ]);
 
         $data = $request->validate([
-            'proveedor'     => 'required|string|max:40|unique:proveedores,proveedor',
-            'mail'          => 'nullable|email:rfc|max:150',
-            'telefono'      => 'nullable|string|max:20',
-            'provincia'     => 'nullable|string|max:40',
-            'ciudad'        => 'nullable|string|max:40',
-            'codigo_postal' => 'nullable|string|max:20',
-            'direccion'     => 'nullable|string|max:40',
+            'proveedor'     => 'required|string|max:30|unique:proveedores,proveedor',
+            'mail'          => 'nullable|email:rfc|max:28',
+            'telefono'      => 'nullable|string|max:15',
+            'provincia'     => 'nullable|string|max:14',
+            'ciudad'        => 'nullable|string|max:16',
+            'codigo_postal' => 'nullable|string|max:8',
+            'direccion'     => 'nullable|string|max:24',
         ]);
 
         $proveedor = Proveedor::crear($data);
@@ -120,13 +120,13 @@ $query = Proveedor::where('estado', 'baja');
         ]);
 
         $data = $request->validate([
-            'proveedor'     => 'required|string|max:40|unique:proveedores,proveedor,' . $id . ',idProveedor',
-            'mail'          => 'nullable|email:rfc|max:150',
-            'telefono'      => 'nullable|string|max:20',
-            'provincia'     => 'nullable|string|max:40',
-            'ciudad'        => 'nullable|string|max:40',
-            'codigo_postal' => 'nullable|string|max:20',
-            'direccion'     => 'nullable|string|max:40',
+            'proveedor'     => 'required|string|max:30|unique:proveedores,proveedor,' . $id . ',idProveedor',
+            'mail'          => 'nullable|email:rfc|max:28',
+            'telefono'      => 'nullable|string|max:15',
+            'provincia'     => 'nullable|string|max:14',
+            'ciudad'        => 'nullable|string|max:16',
+            'codigo_postal' => 'nullable|string|max:8',
+            'direccion'     => 'nullable|string|max:24',
         ]);
 
         $proveedor->actualizar($data);

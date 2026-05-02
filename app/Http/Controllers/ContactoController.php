@@ -78,12 +78,12 @@ class ContactoController extends Controller
         ]);
 
         $data = $request->validate([
-            'nombre'      => 'required|string|max:40',
+            'nombre'      => 'required|string|max:30',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
-            'telefono'    => ['nullable', 'string', 'max:30', 'regex:/^[0-9+\-().\s]+$/'],
-            'mail'        => ['nullable', 'string', 'max:100', 'email:rfc'],
-            'observacion' => ['nullable', 'string', 'max:80'],
-            'cargo'       => 'nullable|string|max:40',
+            'telefono'    => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-().\s]+$/'],
+            'mail'        => ['nullable', 'string', 'max:28', 'email:rfc'],
+            'observacion' => ['nullable', 'string', 'max:42'],
+            'cargo'       => 'nullable|string|max:18',
         ]);
 
         $contacto = Contacto::crear($data);
@@ -126,12 +126,12 @@ class ContactoController extends Controller
         ]);
 
         $data = $request->validate([
-            'nombre'      => 'required|string|max:40',
+            'nombre'      => 'required|string|max:30',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
-            'telefono'    => ['nullable', 'string', 'max:30', 'regex:/^[0-9+\-().\s]+$/'],
-            'mail'        => ['nullable', 'string', 'max:100', 'email:rfc'],
-            'observacion' => ['nullable', 'string', 'max:80'],
-            'cargo'       => 'nullable|string|max:40',
+            'telefono'    => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-().\s]+$/'],
+            'mail'        => ['nullable', 'string', 'max:28', 'email:rfc'],
+            'observacion' => ['nullable', 'string', 'max:42'],
+            'cargo'       => 'nullable|string|max:18',
         ]);
 
         $contacto->actualizar($data);

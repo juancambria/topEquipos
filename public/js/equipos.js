@@ -1284,9 +1284,6 @@ function forceCerrarModalEquipo() {
     if (overlay) {
         overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalEquipo(); });
     }
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && overlay && overlay.classList.contains('show')) cerrarModalEquipo();
-    });
 
     document.querySelectorAll('#tablaEquipos .fila-equipo-editar').forEach(function(row) {
         row.addEventListener('dblclick', function(e) {

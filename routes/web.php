@@ -203,6 +203,12 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::post('/limpiar-sesion-equipos', [FacturaController::class, 'limpiarSesionEquipos'])->name('limpiarSesionEquipos');
     Route::get('/siguiente-numero', [FacturaController::class, 'siguienteNumero'])->name('siguienteNumero');
     Route::get('/equipos', [FacturaController::class, 'equipos'])->name('equipos');
+    Route::get('/{id}/pdfs/{pdfId}/descargar', [FacturaController::class, 'descargarPdf'])
+        ->whereNumber(['id', 'pdfId'])
+        ->name('pdfs.descargar');
+    Route::delete('/{id}/pdfs/{pdfId}', [FacturaController::class, 'eliminarPdf'])
+        ->whereNumber(['id', 'pdfId'])
+        ->name('pdfs.eliminar');
     Route::get('/{id}', [FacturaController::class, 'show'])->whereNumber('id')->name('show');
 });
 

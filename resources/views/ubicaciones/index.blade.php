@@ -90,7 +90,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalUbicacionTituloPagina">Ubicación</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalUbicacion()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalUbicacion()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formUbicacionPagina" method="POST" class="modal-sector-body">
             @csrf
@@ -100,7 +100,7 @@
             </div>
             <div class="form-grupo">
                 <label for="ubicacionCodigoPagina">Código</label>
-                <input type="text" id="ubicacionCodigoPagina" name="codigo" autocomplete="off">
+                <input type="text" id="ubicacionCodigoPagina" name="codigo" maxlength="5" inputmode="numeric" pattern="[0-9]*" autocomplete="off" title="Hasta 5 dígitos">
             </div>
             <div class="form-grupo">
                 <label for="ubicacionCiudadPagina">Ciudad</label>

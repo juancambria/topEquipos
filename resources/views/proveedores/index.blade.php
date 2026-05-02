@@ -104,37 +104,37 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalProveedorTitulo">Proveedor</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalProveedor()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalProveedor()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formProveedor" method="POST" class="modal-sector-body">
             @csrf
             <div class="form-grupo">
                 <label for="proveedorNombre">Proveedor</label>
-                <input type="text" id="proveedorNombre" name="proveedor" required autocomplete="off">
+                <input type="text" id="proveedorNombre" name="proveedor" required autocomplete="off" maxlength="30">
             </div>
             <div class="form-grupo">
                 <label for="proveedorMail">Mail</label>
-                <input type="email" id="proveedorMail" name="mail" autocomplete="off">
+                <input type="email" id="proveedorMail" name="mail" autocomplete="off" maxlength="28" title="Máximo 28 caracteres">
             </div>
             <div class="form-grupo">
                 <label for="proveedorTelefono">Teléfono</label>
-                <input type="tel" id="proveedorTelefono" name="telefono" autocomplete="off" maxlength="20">
+                <input type="tel" id="proveedorTelefono" name="telefono" autocomplete="off" maxlength="15" inputmode="tel">
             </div>
             <div class="form-grupo">
                 <label for="proveedorDireccion">Dirección</label>
-                <input type="text" id="proveedorDireccion" name="direccion" autocomplete="off">
+                <input type="text" id="proveedorDireccion" name="direccion" autocomplete="off" maxlength="24">
             </div>
             <div class="form-grupo">
                 <label for="proveedorCiudad">Ciudad</label>
-                <input type="text" id="proveedorCiudad" name="ciudad" autocomplete="off">
+                <input type="text" id="proveedorCiudad" name="ciudad" autocomplete="off" maxlength="16">
             </div>
             <div class="form-grupo">
                 <label for="proveedorProvincia">Provincia</label>
-                <input type="text" id="proveedorProvincia" name="provincia" autocomplete="off">
+                <input type="text" id="proveedorProvincia" name="provincia" autocomplete="off" maxlength="14">
             </div>
             <div class="form-grupo">
                 <label for="proveedorCodigoPostal">Código Postal</label>
-                <input type="text" id="proveedorCodigoPostal" name="codigo_postal" autocomplete="off">
+                <input type="text" id="proveedorCodigoPostal" name="codigo_postal" autocomplete="off" maxlength="8">
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalProveedor()">Cancelar</button>

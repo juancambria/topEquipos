@@ -68,6 +68,11 @@ class Factura extends Model
         return $this->hasMany(FacturaDetalle::class, 'idFactura', 'idFactura');
     }
 
+    public function pdfs()
+    {
+        return $this->hasMany(FacturaPdf::class, 'idFactura', 'idFactura');
+    }
+
     // Scopes
     public function scopeActivos($query)
     {

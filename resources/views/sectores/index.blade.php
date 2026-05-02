@@ -67,7 +67,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalSectorTitulo">Sector</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalSector()">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalSector()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
 
         <form id="formSector" method="POST" class="modal-sector-body">
@@ -94,7 +94,7 @@
     <div class="modal-sector" style="max-width: 500px;">
         <div class="modal-sector-header">
             <h2 id="tituloUbicacionesSector">Ubicaciones del sector</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalUbicacionesSector()">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalUbicacionesSector()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <div class="modal-sector-body">
              <p style="margin: 0 0 12px 0; color: #666; font-size: 13px;">

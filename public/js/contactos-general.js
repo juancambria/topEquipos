@@ -42,12 +42,6 @@
         if (e.target === overlay) cerrarModalContactoGeneral();
     });
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') {
-            cerrarModalContactoGeneral();
-        }
-    });
-
     document.querySelectorAll('.btn-editar-contacto-general').forEach(function(btn) {
         btn.addEventListener('click', function() {
             abrirModalContactoGeneral('editar', btn.dataset.id, btn.dataset.nombre, btn.dataset.telefono, btn.dataset.cargo, btn.dataset.proveedor);

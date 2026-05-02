@@ -11,7 +11,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalMarcaTitulo">Nueva Marca</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalMarca()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalMarca()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formMarca" method="POST" action="{{ route('marcas.crear') }}" class="modal-sector-body">
             @csrf
@@ -31,7 +31,7 @@
     <div class="modal-sector" style="max-width: 560px;">
         <div class="modal-sector-header">
             <h2 id="tituloMarcaTipos">Tipos de la marca</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalTiposMarca()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalTiposMarca()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <div class="modal-sector-body">
             <p style="margin-top:0;">Seleccione/marque con una tilde a los tipos de equipos que corresponden a esta marca.</p>
@@ -57,7 +57,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalModeloTitulo">Nuevo Modelo</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalModelo()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalModelo()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formModelo" method="POST" action="{{ route('modelos.store') }}" class="modal-sector-body">
             @csrf
@@ -94,7 +94,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalTipoTitulo">Nuevo Tipo</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalTipo()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalTipo()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formTipo" method="POST" action="{{ route('tipos.crear') }}" class="modal-sector-body">
             @csrf
@@ -117,7 +117,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalUbicacionTitulo">Nueva Ubicación</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalUbicacion()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalUbicacion()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formUbicacion" method="POST" action="{{ route('ubicaciones.crear') }}" class="modal-sector-body">
             @csrf
@@ -127,7 +127,7 @@
             </div>
             <div class="form-grupo">
                 <label for="ubicacionCodigo">Código</label>
-                <input type="text" id="ubicacionCodigo" name="codigo" autocomplete="off">
+                <input type="text" id="ubicacionCodigo" name="codigo" maxlength="5" inputmode="numeric" pattern="[0-9]*" autocomplete="off" title="Hasta 5 dígitos">
             </div>
             <div class="form-grupo">
                 <label for="ubicacionTelefono">Teléfono</label>
@@ -164,7 +164,7 @@
     <div class="modal-sector">
         <div class="modal-sector-header">
             <h2 id="modalSectorTitulo">Nuevo Sector</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalSector()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalSector()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formSector" method="POST" action="{{ route('sectores.crear') }}" class="modal-sector-body">
             @csrf

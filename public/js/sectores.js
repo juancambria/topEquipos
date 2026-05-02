@@ -320,6 +320,9 @@
 
                 if (!ubicaciones.length) {
                     bodyUbicaciones.innerHTML = '<tr><td colspan="2">No hay ubicaciones disponibles.</td></tr>';
+                    if (typeof window.__refocusModal === 'function') {
+                        window.__refocusModal(overlayUbicaciones);
+                    }
                     return;
                 }
 
@@ -343,6 +346,9 @@
             } catch (error) {
                 console.error(error);
                 bodyUbicaciones.innerHTML = '<tr><td colspan="2">No se pudieron cargar las ubicaciones.</td></tr>';
+            }
+            if (typeof window.__refocusModal === 'function') {
+                window.__refocusModal(overlayUbicaciones);
             }
         }
 

@@ -309,10 +309,6 @@
     };
 
     overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalMarca(); });
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') cerrarModalMarca();
-        if (e.key === 'Escape' && modalMarcaTipos && modalMarcaTipos.getAttribute('aria-hidden') === 'false') cerrarModalTiposMarca();
-    });
 
     var selectedMarcaInfo = document.getElementById('selectedMarcaInfo');
     var btnEditarMarca = document.getElementById('btnEditarMarca');

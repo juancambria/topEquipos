@@ -137,9 +137,6 @@
     inputNombre.addEventListener('input', actualizarEstadoSubmitTipo);
 
     overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalTipo(); });
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') cerrarModalTipo();
-    });
 
     var btnEliminarTipo = document.getElementById('btnEliminarTipo');
     var formEliminarTipo = document.getElementById('formEliminarTipo');

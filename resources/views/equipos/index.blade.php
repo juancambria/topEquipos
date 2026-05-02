@@ -161,7 +161,7 @@
     <div class="modal-equipo">
         <div class="modal-equipo-header">
             <h2 id="modalEquipoTitulo">Alta de Equipo</h2>
-            <button type="button" class="modal-cerrar" onclick="cerrarModalEquipo()" aria-label="Cerrar">&times;</button>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalEquipo()" aria-label="Cerrar" title="Alt+Mayús+C o Esc para cerrar">&times;</button>
         </div>
         <form id="formEquipo" method="POST" class="modal-equipo-body" enctype="multipart/form-data">
             @csrf

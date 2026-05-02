@@ -5,18 +5,35 @@
   window.__inputLimitsLoaded = true;
 
   const textRules = [
+    /* Proveedor / contacto (modales): acotado */
+    { match: (el) => el.id === 'proveedorNombre', max: 30 },
+    { match: (el) => el.id === 'proveedorMail', max: 28 },
+    { match: (el) => el.id === 'proveedorTelefono', max: 15 },
+    { match: (el) => el.id === 'proveedorDireccion', max: 24 },
+    { match: (el) => el.id === 'proveedorCiudad', max: 16 },
+    { match: (el) => el.id === 'proveedorProvincia', max: 14 },
+    { match: (el) => el.id === 'proveedorCodigoPostal', max: 8 },
+    { match: (el) => el.id === 'contactoNombre', max: 30 },
+    { match: (el) => el.id === 'contactoMail', max: 28 },
+    { match: (el) => el.id === 'contactoTelefono', max: 15 },
+    { match: (el) => el.id === 'contactoCargo', max: 18 },
+    { match: (el) => el.id === 'contactoObservacion', max: 42 },
+    {
+      match: (el) =>
+        el.id === 'ubicacionTelefono' || el.id === 'ubicacionTelefonoPagina',
+      max: 30,
+    },
     { match: (el) => el.name === 'marca', max: 15 },
     { match: (el) => el.name === 'nombreTipo', max: 20 },
     { match: (el) => el.name === 'modelo', max: 20 },
-    { match: (el) => el.name === 'proveedor', max: 40 },
-    { match: (el) => el.name === 'mail', max: 50 },
-    { match: (el) => el.name === 'direccion', max: 30 },
-    { match: (el) => el.name === 'ciudad', max: 30 },
-    { match: (el) => el.name === 'provincia', max: 20 },
-    { match: (el) => el.name === 'codigo_postal', max: 10 },
-    { match: (el) => el.name === 'nombre', max: 25 },
-    { match: (el) => el.name === 'telefono', max: 15 },
-    { match: (el) => el.name === 'cargo', max: 20 },
+    { match: (el) => el.name === 'proveedor', max: 30 },
+    { match: (el) => el.name === 'mail', max: 28 },
+    { match: (el) => el.name === 'direccion', max: 40 },
+    { match: (el) => el.name === 'ciudad', max: 40 },
+    { match: (el) => el.name === 'provincia', max: 40 },
+    { match: (el) => el.name === 'codigo_postal', max: 20 },
+    { match: (el) => el.name === 'nombre', max: 40 },
+    { match: (el) => el.name === 'cargo', max: 18 },
     { match: (el) => el.name === 'serie', max: 25 },
     { match: (el) => el.name === 'numero', max: 20 },
     { match: (el) => el.name === 'obra' || /\[obra\]$/.test(el.name || ''), max: 15 },
@@ -30,6 +47,7 @@
     { match: (el) => el.name === 'idPresupuesto', max: 10 },
     { match: (el) => el.id === 'equipoGarantiaDias', max: 3 },
     { match: (el) => el.id === 'equipoFacturaGarantiaDias', max: 3 },
+    { match: (el) => el.id === 'ubicacionCodigo' || el.id === 'ubicacionCodigoPagina', max: 5 },
   ];
 
   const priceRules = [
@@ -59,6 +77,7 @@
 
     el.dataset.maxDigits = String(rule.max);
     el.setAttribute('inputmode', 'numeric');
+    setMaxLength(el, rule.max);
   }
 
   function applyPriceRules(el) {
@@ -84,7 +103,8 @@
     if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
 
     if (el.name === 'telefono') {
-      const cleaned = (el.value || '').replace(/[^0-9+\-().\s]/g, '').slice(0, el.maxLength || 30);
+      const cap = el.maxLength > 0 ? el.maxLength : 30;
+      const cleaned = (el.value || '').replace(/[^0-9+\-().\s]/g, '').slice(0, cap);
       if (cleaned !== el.value) el.value = cleaned;
     }
 

@@ -114,7 +114,7 @@ class UbicacionController extends Controller
 
         $data = $request->validate([
             'nombre' => 'required|string|max:40|unique:ubicaciones,nombre',
-            'codigo' => 'nullable|string|max:40',
+            'codigo' => ['nullable', 'string', 'regex:/^[0-9]{0,5}$/'],
             'ciudad' => 'nullable|string|max:40',
             'provincia' => 'nullable|string|max:40',
             'telefono' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+\-().\s]+$/'],
@@ -154,7 +154,7 @@ class UbicacionController extends Controller
 
         $data = $request->validate([
             'nombre' => 'required|string|max:40|unique:ubicaciones,nombre,' . $id . ',id',
-            'codigo' => 'nullable|string|max:40',
+            'codigo' => ['nullable', 'string', 'regex:/^[0-9]{0,5}$/'],
             'ciudad' => 'nullable|string|max:40',
             'provincia' => 'nullable|string|max:40',
             'telefono' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+\-().\s]+$/'],

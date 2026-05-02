@@ -262,12 +262,20 @@
     /* --- Flujo "Ver sectores": modales con display flex --- */
     window.abrirModal = function(id) {
         var el = document.getElementById(id);
-        if (el) el.style.display = 'flex';
+        if (!el) return;
+        el.style.display = 'flex';
+        if (el.classList.contains('modal-antiguo')) {
+            el.setAttribute('aria-hidden', 'false');
+        }
     };
 
     window.cerrarModal = function(id) {
         var el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+        if (!el) return;
+        el.style.display = 'none';
+        if (el.classList.contains('modal-antiguo')) {
+            el.setAttribute('aria-hidden', 'true');
+        }
     };
 
     window.cerrarModalSectores = function() {
@@ -400,6 +408,9 @@
                     document.querySelectorAll('.sector-checkbox').forEach(cb => {
                         cb.addEventListener('change', updateSelectAll);
                     });
+                }
+                if (typeof window.__refocusModal === 'function') {
+                    window.__refocusModal('modalSectores');
                 }
             });
     }

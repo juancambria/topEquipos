@@ -10,7 +10,7 @@
                     <span>&times;</span>
                 </button>
             </div>
-            <form action="{{ route('facturas.crear') }}" method="POST" id="formFactura">
+            <form action="{{ route('facturas.crear') }}" method="POST" id="formFactura" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="id" id="factura_id">
                 <input type="hidden" name="_method" id="form_method" value="">
@@ -162,6 +162,32 @@
                                 <textarea name="observacion" id="observacion" rows="2" 
                                     placeholder="Observaciones adicionales..." class="form-control"></textarea>
                             </div>
+                        </div>
+
+                        <div class="factura-upload-pdfs-card">
+                            <div class="factura-upload-pdfs-head">
+                                <span class="factura-upload-pdfs-icon" aria-hidden="true">📎</span>
+                                <div>
+                                    <strong class="factura-upload-pdfs-title">PDF de la factura</strong>
+                                    <p class="factura-upload-pdfs-sub">Arrastrá archivos dentro o tocá esta zona cuando esté vacía; con archivos cargados podés usar el botón «+ Añadir PDF». Los límites figuran debajo.</p>
+                                </div>
+                            </div>
+
+                            <div id="facturaPdfDropzone" class="factura-pdf-zone">
+                                <input type="file" name="pdfs[]" id="factura_pdfs" multiple
+                                    accept="application/pdf,.pdf" class="factura-pdf-input-sronly">
+                                <div id="facturaPdfZoneBody" class="factura-pdf-zone-body factura-pdf-zone-body--empty">
+                                    <div id="facturaPdfTilesMerged" class="factura-pdf-tiles-grid" aria-live="polite"></div>
+                                    <label id="facturaPdfZoneAddHit" class="factura-pdf-zone-add-hit" for="factura_pdfs">
+                                        <span id="facturaPdfTilesEmptyHint" class="factura-pdf-zone-visual">
+                                            <span class="factura-pdf-zone-empty-icon" aria-hidden="true">📄</span>
+                                            <span class="factura-pdf-zone-cta">Tocá o soltá tus PDF aquí</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <p id="facturaPdfsCapacidadTexto" class="factura-pdf-cap-line"></p>
                         </div>
                         
                         <!-- BOTONES -->
