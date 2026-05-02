@@ -16,6 +16,7 @@
     pdfsLocalesUrls: [],
     pdfsServidorEnModal: [],
     facturaIdParaPdfsServidor: null,
+    numeroFacturaParaPdfsServidor: null,
   };
 
   const FACTURA_MAX_PDFS = 5;
@@ -76,11 +77,84 @@
     return s.replace(/^\(/, '').replace(/\)$/, '');
   }
 
-  function renderAdjuntosExistentesFactura(pdfs, facturaId) {
+  /** Último segmento de URL alineado con FacturaController::slugNombrePdfParaUrl (título de pestaña). */
+  function slugNombrePdfParaUrlFactura(nombreOriginal, numeroFactura, idPdf) {
+    const numRaw =
+      numeroFactura != null && String(numeroFactura).trim() !== '' ? String(numeroFactura).trim() : '';
+    const numSlug = numRaw !== '' ? numRaw.replace(/[^\w.-]+/gu, '-') : 'sin-numero';
+    const fallback = `Factura-${numSlug}-${idPdf}.pdf`;
+    if (!nombreOriginal || !/\.pdf$/i.test(String(nombreOriginal))) return fallback;
+    let base = String(nombreOriginal)
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    base = base.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+    if (base.length < 5 || !/\.pdf$/i.test(base)) return fallback;
+    return base.slice(0, 120);
+  }
+
+  async function abrirVistaPreviaPdfDesdeArchivoLocal(file, anchor) {
+    if (!file || !esPdfValidoArchivo(file)) {
+      toast('Archivo PDF no válido', 'error');
+      return;
+    }
+    if (anchor?.dataset?.pdfPreviewLoading === '1') return;
+
+    const previewWin = window.open('about:blank', '_blank');
+    if (!previewWin) {
+      toast('Permita ventanas emergentes para ver el PDF', 'warning');
+      return;
+    }
+
+    try {
+      if (anchor) anchor.dataset.pdfPreviewLoading = '1';
+
+      const fd = new FormData();
+      fd.append('pdf', file);
+      const num = ($('#numero')?.value || '').trim();
+      if (num) fd.append('numero_factura', num);
+
+      const r = await fetch('/facturas/pdfs/vista-previa', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': csrfToken(),
+        },
+        body: fd,
+      });
+
+      const data = r.headers.get('content-type')?.includes('application/json') ? await r.json() : null;
+
+      if (!r.ok) {
+        const msg =
+          (data && typeof data.message === 'string' && data.message) ||
+          (data?.errors?.pdf && String(data.errors.pdf[0])) ||
+          `Error ${r.status}`;
+        throw new Error(msg);
+      }
+
+      if (!data?.url) throw new Error('Respuesta inválida del servidor');
+
+      previewWin.location.href = data.url;
+    } catch (e) {
+      try {
+        previewWin.close();
+      } catch (_) {
+        /* ignore */
+      }
+      toast(`No se pudo abrir la vista previa: ${e.message}`, 'error');
+    } finally {
+      if (anchor) delete anchor.dataset.pdfPreviewLoading;
+    }
+  }
+
+  function renderAdjuntosExistentesFactura(pdfs, facturaId, numeroFactura) {
     const idNum = Number(facturaId);
     if (!Number.isFinite(idNum) || !Array.isArray(pdfs) || pdfs.length === 0) {
       state.pdfsServidorEnModal = [];
       state.facturaIdParaPdfsServidor = null;
+      state.numeroFacturaParaPdfsServidor = null;
     } else {
       state.pdfsServidorEnModal = pdfs.map((p) => ({
         idFacturaPdf: p.idFacturaPdf,
@@ -88,6 +162,10 @@
         tamano_bytes: p.tamano_bytes,
       }));
       state.facturaIdParaPdfsServidor = idNum;
+      state.numeroFacturaParaPdfsServidor =
+        numeroFactura != null && String(numeroFactura).trim() !== ''
+          ? String(numeroFactura).trim()
+          : null;
     }
     pintarMosaicoPdfsFacturaModal();
   }
@@ -158,7 +236,12 @@
 
     const a = document.createElement('a');
     a.className = 'factura-pdf-tile';
-    a.href = `/facturas/${idFactura}/pdfs/${p.idFacturaPdf}/descargar`;
+    const slug = slugNombrePdfParaUrlFactura(
+      p.nombre_original,
+      state.numeroFacturaParaPdfsServidor,
+      p.idFacturaPdf,
+    );
+    a.href = `/facturas/${idFactura}/pdfs/${p.idFacturaPdf}/${encodeURIComponent(slug)}`;
     a.target = '_blank';
     a.rel = 'noopener';
     a.title = `Abrir: ${p.nombre_original || 'PDF'}`;
@@ -206,13 +289,16 @@
     const wrap = document.createElement('div');
     wrap.className = 'factura-pdf-tile-wrap';
 
-    const url = state.pdfsLocalesUrls[idx];
     const a = document.createElement('a');
     a.className = 'factura-pdf-tile';
-    a.href = url;
+    a.href = '#';
     a.target = '_blank';
     a.rel = 'noopener';
     a.title = 'Abrir en otra pestaña';
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      void abrirVistaPreviaPdfDesdeArchivoLocal(file, a);
+    });
 
     const badge = document.createElement('span');
     badge.className = 'factura-pdf-tile-badge factura-pdf-tile-badge--nuevo';
@@ -1309,7 +1395,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     generarNumeroFactura();
 
     vaciarColaPdfsLocalesSinRepintado();
-    renderAdjuntosExistentesFactura([], null);
+    renderAdjuntosExistentesFactura([], null, null);
 
     setModalVisible('modalFactura', true);
   }
@@ -1368,7 +1454,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     recalcularTotales();
 
     vaciarColaPdfsLocalesSinRepintado();
-    renderAdjuntosExistentesFactura(data.pdfs || [], id);
+    renderAdjuntosExistentesFactura(data.pdfs || [], id, data.numero);
 
     const title = document.getElementById('modalFacturaTitle');
     const form = document.getElementById('formFactura');
@@ -1433,8 +1519,10 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
                     const peso = formatBytesFacturaPdfSinParentesis(p.tamano_bytes);
                     const meta = [peso, p.created_at ? String(p.created_at) : ''].filter(Boolean).join(' · ');
                     const tit = escapeHtml(p.nombre_original || 'PDF');
+                    const slug = slugNombrePdfParaUrlFactura(p.nombre_original, data.numero, p.idFacturaPdf);
+                    const pdfHref = `/facturas/${data.idFactura}/pdfs/${p.idFacturaPdf}/${encodeURIComponent(slug)}`;
                     return `
-                    <a class="factura-pdf-tile factura-pdf-tile--detalle" href="/facturas/${data.idFactura}/pdfs/${p.idFacturaPdf}/descargar" target="_blank" rel="noopener" title="Abrir en otra pestaña">
+                    <a class="factura-pdf-tile factura-pdf-tile--detalle" href="${pdfHref}" target="_blank" rel="noopener" title="Abrir en otra pestaña">
                       <span class="factura-pdf-tile-icon" aria-hidden="true">📄</span>
                       <span class="factura-pdf-tile-name">${tit}</span>
                       <span class="factura-pdf-tile-meta">${escapeHtml(meta)}</span>

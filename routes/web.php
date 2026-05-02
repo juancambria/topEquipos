@@ -203,9 +203,17 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::post('/limpiar-sesion-equipos', [FacturaController::class, 'limpiarSesionEquipos'])->name('limpiarSesionEquipos');
     Route::get('/siguiente-numero', [FacturaController::class, 'siguienteNumero'])->name('siguienteNumero');
     Route::get('/equipos', [FacturaController::class, 'equipos'])->name('equipos');
-    Route::get('/{id}/pdfs/{pdfId}/descargar', [FacturaController::class, 'descargarPdf'])
+    Route::post('/pdfs/vista-previa', [FacturaController::class, 'subirVistaPreviaPdf'])->name('pdfs.vista_previa_subir');
+    Route::get('/pdfs/vista-previa/{token}/{nombreArchivo}', [FacturaController::class, 'verVistaPreviaPdf'])
+        ->where(['token' => '[a-zA-Z0-9]{32,}', 'nombreArchivo' => '[A-Za-z0-9._\-]+\.pdf'])
+        ->name('pdfs.vista_previa_ver');
+    Route::get('/{id}/pdfs/{pdfId}/descargar', [FacturaController::class, 'descargarPdfLegacy'])
         ->whereNumber(['id', 'pdfId'])
         ->name('pdfs.descargar');
+    Route::get('/{id}/pdfs/{pdfId}/{nombreArchivo}', [FacturaController::class, 'descargarPdf'])
+        ->whereNumber(['id', 'pdfId'])
+        ->where('nombreArchivo', '[A-Za-z0-9._\-]+\.pdf')
+        ->name('pdfs.ver');
     Route::delete('/{id}/pdfs/{pdfId}', [FacturaController::class, 'eliminarPdf'])
         ->whereNumber(['id', 'pdfId'])
         ->name('pdfs.eliminar');

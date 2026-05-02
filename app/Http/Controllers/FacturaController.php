@@ -13,8 +13,10 @@ use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Sector;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class FacturaController extends Controller
@@ -609,19 +611,179 @@ class FacturaController extends Controller
         }
     }
 
-    public function descargarPdf($id, $pdfId)
+    /**
+     * Nombre de archivo solo ASCII para el último segmento de la URL (título de pestaña en muchos navegadores).
+     */
+    private static function slugNombrePdfParaUrl(?string $nombreOriginal, ?string $numeroFactura, int|string $pdfId): string
+    {
+        $num = ($numeroFactura !== null && $numeroFactura !== '')
+            ? trim((string) $numeroFactura)
+            : '';
+        $numSlug = $num !== '' ? preg_replace('/[^\w.-]+/u', '-', $num) : 'sin-numero';
+        $fallback = 'Factura-' . $numSlug . '-' . $pdfId . '.pdf';
+
+        if ($nombreOriginal === null || $nombreOriginal === '' || ! preg_match('/\.pdf$/i', $nombreOriginal)) {
+            return $fallback;
+        }
+
+        $base = Str::ascii(trim($nombreOriginal));
+        $base = preg_replace('/\s+/u', '_', $base);
+        $base = preg_replace('/[^a-zA-Z0-9._-]/u', '', $base);
+
+        if ($base === '' || strlen($base) < 5 || ! preg_match('/\.pdf$/i', $base)) {
+            return $fallback;
+        }
+
+        return substr($base, 0, 120);
+    }
+
+    /**
+     * Elimina PDF temporales de vista previa más antiguos que 1 hora (best-effort).
+     */
+    protected function limpiarPrevistasPdfAntiguas(): void
+    {
+        $disk = Storage::disk('local');
+        $dir = 'tmp_factura_pdf_preview';
+
+        if (! $disk->exists($dir)) {
+            return;
+        }
+
+        $cutoff = time() - 3600;
+
+        foreach ($disk->files($dir) as $relPath) {
+            if ($disk->lastModified($relPath) < $cutoff) {
+                $disk->delete($relPath);
+            }
+        }
+    }
+
+    /**
+     * Guarda un PDF subido solo para vista previa en alta/edición (antes de persistir la factura).
+     */
+    public function subirVistaPreviaPdf(Request $request)
+    {
+        $numero = $this->cleanString($request->input('numero_factura'));
+        $request->merge(['numero_factura' => $numero]);
+
+        try {
+            $request->validate([
+                'pdf' => ['required', 'file', 'mimes:pdf', 'max:16384'],
+                'numero_factura' => ['nullable', 'string', 'max:20'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => $e->validator->errors()->first() ?: 'Datos no válidos.',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $file = $request->file('pdf');
+
+        if (! $file instanceof \Illuminate\Http\UploadedFile || ! $file->isValid()) {
+            return response()->json(['message' => 'Archivo PDF no válido.'], 422);
+        }
+
+        $this->limpiarPrevistasPdfAntiguas();
+
+        $token = Str::random(40);
+        $storedPath = $file->storeAs('tmp_factura_pdf_preview', $token . '.pdf', 'local');
+
+        $slug = self::slugNombrePdfParaUrl(
+            substr($file->getClientOriginalName(), 0, 255),
+            $request->input('numero_factura'),
+            'preview'
+        );
+
+        Cache::put(
+            'factura_pdf_preview:' . $token,
+            [
+                'path' => $storedPath,
+                'user_id' => (int) auth()->id(),
+                'slug' => $slug,
+            ],
+            now()->addMinutes(15)
+        );
+
+        return response()->json([
+            'url' => route('facturas.pdfs.vista_previa_ver', [
+                'token' => $token,
+                'nombreArchivo' => $slug,
+            ]),
+        ]);
+    }
+
+    public function verVistaPreviaPdf(string $token, string $nombreArchivo)
+    {
+        /** @var array{path: string, user_id: int, slug: string}|null $payload */
+        $payload = Cache::get('factura_pdf_preview:' . $token);
+
+        if (
+            ! is_array($payload)
+            || ! isset($payload['path'], $payload['user_id'], $payload['slug'])
+            || (int) $payload['user_id'] !== (int) auth()->id()
+        ) {
+            abort(404);
+        }
+
+        if ($nombreArchivo !== $payload['slug']) {
+            return redirect()->route('facturas.pdfs.vista_previa_ver', [
+                'token' => $token,
+                'nombreArchivo' => $payload['slug'],
+            ]);
+        }
+
+        if (! Storage::disk('local')->exists($payload['path'])) {
+            Cache::forget('factura_pdf_preview:' . $token);
+            abort(404);
+        }
+
+        return Storage::disk('local')->response(
+            $payload['path'],
+            $payload['slug'],
+            ['Content-Type' => 'application/pdf'],
+            'inline'
+        );
+    }
+
+    public function descargarPdfLegacy($id, $pdfId)
+    {
+        $pdf = FacturaPdf::where('idFactura', $id)
+            ->where('idFacturaPdf', $pdfId)
+            ->firstOrFail();
+        $factura = Factura::query()->findOrFail($id);
+        $slug = self::slugNombrePdfParaUrl($pdf->nombre_original, $factura->numero, $pdfId);
+
+        return redirect()->route('facturas.pdfs.ver', [
+            'id' => $id,
+            'pdfId' => $pdfId,
+            'nombreArchivo' => $slug,
+        ]);
+    }
+
+    public function descargarPdf($id, $pdfId, string $nombreArchivo)
     {
         $pdf = FacturaPdf::where('idFactura', $id)
             ->where('idFacturaPdf', $pdfId)
             ->firstOrFail();
 
-        if (!Storage::disk('local')->exists($pdf->ruta_archivo)) {
+        if (! Storage::disk('local')->exists($pdf->ruta_archivo)) {
             abort(404, 'Archivo no encontrado');
+        }
+
+        $factura = Factura::query()->findOrFail($id);
+        $nombreCabecera = self::slugNombrePdfParaUrl($pdf->nombre_original, $factura->numero, $pdfId);
+        if ($nombreArchivo !== $nombreCabecera) {
+            return redirect()->route('facturas.pdfs.ver', [
+                'id' => $id,
+                'pdfId' => $pdfId,
+                'nombreArchivo' => $nombreCabecera,
+            ]);
         }
 
         return Storage::disk('local')->response(
             $pdf->ruta_archivo,
-            $pdf->nombre_original,
+            $nombreCabecera,
             ['Content-Type' => 'application/pdf'],
             'inline'
         );
