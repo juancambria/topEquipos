@@ -156,7 +156,7 @@ class FacturaController extends Controller
         ]);
 
         $data = $request->validate(array_merge([
-            'numero' => 'required|string|max:20|unique:facturas,numero',
+            'numero' => ['required', 'string', 'max:20', 'regex:/^(\d{5}-\d{8}|\d{6}-\d{8})$/', 'unique:facturas,numero'],
             'fecha' => 'nullable|date',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
             'observacion' => 'nullable|string|max:1000',
@@ -280,7 +280,7 @@ class FacturaController extends Controller
         ]);
 
         $data = $request->validate(array_merge([
-            'numero' => 'required|string|max:20|unique:facturas,numero,' . $id . ',idFactura',
+            'numero' => ['required', 'string', 'max:20', 'regex:/^(\d{5}-\d{8}|\d{6}-\d{8})$/', 'unique:facturas,numero,' . $id . ',idFactura'],
             'fecha' => 'nullable|date',
             'idProveedor' => 'required|exists:proveedores,idProveedor',
             'observacion' => 'nullable|string|max:1000',
@@ -362,26 +362,38 @@ class FacturaController extends Controller
     }
 
     /**
-     * Obtener siguiente numero de factura
+     * Siguiente número sugerido: #####-######## (5 dígitos fecha compacta + 8 correlativos).
+     * Los 5 dígitos izquierdos son los últimos de yymmdd (ej. 260502 → 60502).
+     * Se mantiene el correlativo máximo del día entre formato nuevo y el histórico YYMMDD-########.
      */
     public function siguienteNumero()
     {
-        $prefijo = date('ymd');
+        $prefijoNuevo = substr(date('ymd'), 1);
+        $prefijoViejo = date('ymd');
         $hoy = date('Y-m-d');
 
-        $ultimaFactura = Factura::whereDate('created_at', $hoy)
-            ->where('numero', 'like', $prefijo . '-%')
-            ->orderBy('idFactura', 'desc')
-            ->first();
+        $numeros = Factura::query()
+            ->whereDate('created_at', $hoy)
+            ->where(function ($q) use ($prefijoNuevo, $prefijoViejo): void {
+                $q->where('numero', 'like', $prefijoNuevo . '-%')
+                    ->orWhere('numero', 'like', $prefijoViejo . '-%');
+            })
+            ->pluck('numero');
 
-        if ($ultimaFactura) {
-            $partes = explode('-', (string) $ultimaFactura->numero);
-            $secuencial = (count($partes) === 2) ? (intval($partes[1]) + 1) : 1;
-        } else {
-            $secuencial = 1;
+        $maxSeq = 0;
+
+        foreach ($numeros as $n) {
+            $n = (string) $n;
+            if (preg_match('/^(\d{5})-(\d{8})$/', $n, $m) === 1 && $m[1] === $prefijoNuevo) {
+                $maxSeq = max($maxSeq, (int) $m[2]);
+            }
+            if (preg_match('/^(\d{6})-(\d{8})$/', $n, $m) === 1 && $m[1] === $prefijoViejo) {
+                $maxSeq = max($maxSeq, (int) $m[2]);
+            }
         }
 
-        $numero = $prefijo . '-' . str_pad((string) $secuencial, 8, '0', STR_PAD_LEFT);
+        $secuencial = $maxSeq + 1;
+        $numero = $prefijoNuevo . '-' . str_pad((string) $secuencial, 8, '0', STR_PAD_LEFT);
 
         return response()->json(['numero' => $numero]);
     }

@@ -21,8 +21,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="numero">Numero de Factura *</label>
-                                <input type="text" name="numero" id="numero" required 
-                                    maxlength="20" placeholder="" class="form-control">
+                                <input type="text" name="numero" id="numero" required
+                                    maxlength="20" placeholder="00000-00000000"
+                                    title="Formato 00000-00000000 (5 dígitos, guion, 8 dígitos)"
+                                    inputmode="numeric" autocomplete="off"
+                                    class="form-control input-numero-factura">
                             </div>
                             <div class="form-group">
                                 <label for="fecha">Fecha</label>

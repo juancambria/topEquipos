@@ -762,6 +762,93 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     return solicitarCierreModal('modalFactura');
   }
 
+  function soloDigitosNumeroFactura(str) {
+    return String(str ?? '').replace(/\D/g, '');
+  }
+
+  function facturaModalEsCreacion() {
+    const id = document.getElementById('factura_id')?.value;
+    return !id || String(id).trim() === '';
+  }
+
+  /** Mientras escribís: sin guion solo dígitos (máx. 5). Con guion, izquierda siempre rellenada a 5 ceros y hasta 8 dígitos a la derecha. */
+  function formatearNumeroFacturaAlEscribir(raw) {
+    const s = String(raw);
+    const idx = s.indexOf('-');
+    const hasHyphen = idx >= 0;
+
+    if (hasHyphen) {
+      const izqDigits = soloDigitosNumeroFactura(s.slice(0, idx)).slice(0, 5);
+      const derDigits = soloDigitosNumeroFactura(s.slice(idx + 1)).slice(0, 8);
+      const izq = izqDigits.padStart(5, '0').slice(-5);
+      return derDigits.length ? `${izq}-${derDigits}` : `${izq}-`;
+    }
+
+    const all = soloDigitosNumeroFactura(s).slice(0, 13);
+    const izqRaw = all.slice(0, 5);
+    const derRaw = all.slice(5);
+    if (!derRaw.length) return izqRaw;
+    const izq = izqRaw.padStart(5, '0').slice(-5);
+    return `${izq}-${derRaw}`;
+  }
+
+  /** #####-######## con ceros a la izquierda; si hay más dígitos de los cuenta, se toman los últimos del tramo. */
+  function normalizarNumeroFacturaCompleto(raw) {
+    const hasHyphen = String(raw).includes('-');
+    let izq;
+    let der;
+    if (hasHyphen) {
+      const parts = String(raw).split('-');
+      izq = soloDigitosNumeroFactura(parts[0]);
+      der = soloDigitosNumeroFactura(parts.slice(1).join(''));
+    } else {
+      const all = soloDigitosNumeroFactura(raw);
+      izq = all.slice(0, 5);
+      der = all.slice(5);
+    }
+    izq = izq.padStart(5, '0').slice(-5);
+    der = der.padStart(8, '0').slice(-8);
+    return `${izq}-${der}`;
+  }
+
+  function numeroFacturaFormatoLegacyYyMmDd(str) {
+    return /^\d{6}-\d{8}$/.test(String(str || '').trim());
+  }
+
+  function aplicarNormalizacionNumeroFacturaSiCorresponde() {
+    const input = document.getElementById('numero');
+    if (!input) return;
+    const v = input.value.trim();
+    if (!v) return;
+    if (numeroFacturaFormatoLegacyYyMmDd(v)) return;
+    input.value = normalizarNumeroFacturaCompleto(v);
+  }
+
+  function initNumeroFacturaMascara() {
+    const input = document.getElementById('numero');
+    if (!input || input.dataset.numeroMaskBound === '1') return;
+    input.dataset.numeroMaskBound = '1';
+
+    input.addEventListener('input', () => {
+      if (!facturaModalEsCreacion()) return;
+      input.value = formatearNumeroFacturaAlEscribir(input.value);
+    });
+
+    input.addEventListener('paste', (ev) => {
+      if (!facturaModalEsCreacion()) return;
+      ev.preventDefault();
+      const t = ev.clipboardData?.getData('text') || '';
+      input.value = formatearNumeroFacturaAlEscribir(t);
+    });
+
+    input.addEventListener('blur', () => {
+      const v = input.value.trim();
+      if (!v) return;
+      if (numeroFacturaFormatoLegacyYyMmDd(v)) return;
+      input.value = normalizarNumeroFacturaCompleto(v);
+    });
+  }
+
   function generarNumeroFactura() {
     const inputNumero = document.getElementById('numero');
     if (!inputNumero) return;
@@ -775,8 +862,9 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       })
       .catch(() => {
         const d = new Date();
-        const fallback = `${d.getFullYear().toString().slice(-2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-00000001`;
-        inputNumero.value = fallback;
+        const ymd = `${String(d.getFullYear()).slice(-2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+        const prefijoIzq = ymd.slice(1);
+        inputNumero.value = `${prefijoIzq}-00000001`;
       });
   }
 
@@ -900,6 +988,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
   }
 
   function prepararCamposFacturaParaSubmit() {
+    aplicarNormalizacionNumeroFacturaSiCorresponde();
+
     $$('#detallesBody tr.detalle-row [name]').forEach((el) => {
       if (el.disabled) {
         el.disabled = false;
@@ -1401,7 +1491,9 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     agregarDetalleFila();
     resetearTotales();
-    generarNumeroFactura();
+
+    const inputNumero = document.getElementById('numero');
+    if (inputNumero) inputNumero.value = '';
 
     vaciarColaPdfsLocalesSinRepintado();
     renderAdjuntosExistentesFactura([], null, null);
@@ -2845,6 +2937,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     window.idProveedorActual = window.idProveedorActual || null;
 
     initFormularioFactura();
+    initNumeroFacturaMascara();
     initFacturaPdfZona();
     initFormularioProveedorFactura();
     initFormularioEquipoDesdeFactura();
