@@ -720,7 +720,6 @@ window.cerrarModalMarca = function() {
             window.toast(msg, type || 'info');
         } else {
             console.log('[' + (type || 'info') + '] ' + msg);
-            alert(msg);
         }
     }
 

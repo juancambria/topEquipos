@@ -205,7 +205,7 @@
         btnEditar.addEventListener('click', function() {
             const row = seleccion.getSelectedRow();
             if (!row) {
-                alert('Selecciona una ubicación primero');
+                mostrarToast('Selecciona una ubicación primero', 'warning');
                 return;
             }
             if (row) {
@@ -228,7 +228,7 @@
         btnEliminar.addEventListener('click', function() {
             const row = seleccion.getSelectedRow();
             if (!row) {
-                alert('Selecciona una ubicación primero');
+                mostrarToast('Selecciona una ubicación primero', 'warning');
                 return;
             }
             const nombre = row.dataset.nombre;
@@ -249,7 +249,7 @@
         btnVerSectores.addEventListener('click', function() {
             const row = seleccion.getSelectedRow();
             if (!row) {
-                alert('Selecciona una ubicación primero');
+                mostrarToast('Selecciona una ubicación primero', 'warning');
                 return;
             }
             abrirModalSectoresUbicacion(row.dataset.id, row.dataset.nombre); 

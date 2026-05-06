@@ -363,7 +363,7 @@
         var settings = Object.assign({
             getRow: null,
             emptyMessage: 'Selecciona un registro primero',
-            alertType: 'alert',
+            alertType: 'toast',
             title: '',
             message: '',
             onConfirm: function() {},
@@ -376,7 +376,7 @@
             if (settings.alertType === 'toast' && typeof window.mostrarToast === 'function') {
                 window.mostrarToast(settings.emptyMessage, 'error');
             } else {
-                window.alert(settings.emptyMessage);
+                console.warn(settings.emptyMessage);
             }
             return null;
         }

@@ -186,7 +186,7 @@
     if (btnEditar) {
         btnEditar.addEventListener('click', function() {
             var row = seleccion.getSelectedRow();
-            if (!row) return alert('Selecciona un proveedor primero');
+            if (!row) return mostrarToast('Selecciona un proveedor primero', 'warning');
             if (!row) return;
             abrirModalProveedor('editar', row.dataset.id, row.dataset.proveedor, row.dataset.mail, row.dataset.telefono, row.dataset.provincia, row.dataset.ciudad, row.dataset.codigo_postal, row.dataset.direccion);
         });
@@ -195,7 +195,7 @@
     if (btnContactos) {
         btnContactos.addEventListener('click', function() {
             var row = seleccion.getSelectedRow();
-            if (!row) return alert('Selecciona un proveedor primero');
+            if (!row) return mostrarToast('Selecciona un proveedor primero', 'warning');
             var url = '/contactos/proveedor/' + row.dataset.id;
             var titulo = 'Contactos: ' + (row.dataset.proveedor || 'proveedor');
             var openAppWindow = getOpenAppWindow();
@@ -210,7 +210,7 @@
     if (btnEliminar) {
         btnEliminar.addEventListener('click', async function() {
             var row = seleccion.getSelectedRow();
-            if (!row) return alert('Selecciona un proveedor primero');
+            if (!row) return mostrarToast('Selecciona un proveedor primero', 'warning');
             
             // Chequeo AJAX de equipos vinculados
             try {

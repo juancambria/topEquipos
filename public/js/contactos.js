@@ -268,7 +268,7 @@
     if (btnEditar) {
         btnEditar.addEventListener('click', function() {
             var row = seleccion.getSelectedRow();
-            if (!row) return alert('Selecciona un contacto primero');
+            if (!row) return mostrarToast('Selecciona un contacto primero', 'warning');
             if (!row) return;
             abrirModalContacto('editar', row.dataset.id, row.dataset.nombre, row.dataset.telefono, row.dataset.mail, row.dataset.observacion, row.dataset.cargo, row.dataset.idProveedor);
         });
@@ -277,7 +277,7 @@
     if (btnEliminar) {
         btnEliminar.addEventListener('click', function() {
             var row = seleccion.getSelectedRow();
-            if (!row) return alert('Selecciona un contacto primero');
+            if (!row) return mostrarToast('Selecciona un contacto primero', 'warning');
             if (!row) return;
             abrirModalConfirmacion(
                 'Eliminar contacto',

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesión - Inventario</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <style>
         .login-container {
             width: 100%;
@@ -22,9 +23,6 @@
         .login-field input { width: 100%; padding: 8px; border: 1px solid #999; border-radius: 4px; }
         .login-actions button { width: 100%; padding: 10px; font-weight: bold; border: 1px solid #666; background: #ddd; }
         .login-actions button:hover { background: #ccc; }
-        .alert { margin-bottom: 14px; padding: 10px; border-radius: 4px; }
-        .alert-error { background: #ffd4d1; color: #8d0700; border: 1px solid #f7c6c3; }
-        .alert-success { background: #dcf7dc; color: #216e2f; border: 1px solid #bde3bc; }
         .text-center { text-align: center; }
         
         /* Fix alineación checkbox Recordarme */
@@ -44,20 +42,6 @@
 <body style="background:#cfcfcf;">
 <div class="login-container">
     <h2 class="text-center">Iniciar sesión</h2>
-
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-error">
-            <ul style="margin:0; padding-left:18px;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
 
     <form method="POST" action="{{ route('login.submit') }}">
         @csrf
@@ -80,5 +64,39 @@
         </div>
     </form>
 </div>
+
+@if(session('success'))
+    <div id="loginSuccessData" data-message="{{ session('success') }}" hidden></div>
+@endif
+
+@if($errors->any())
+    <script id="loginErrorsData" type="application/json">
+        @json($errors->all())
+    </script>
+@endif
+
+<script src="{{ asset('js/toast.js') }}?v={{ time() }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var successNode = document.getElementById('loginSuccessData');
+        if (successNode && successNode.dataset.message) {
+            mostrarToast(successNode.dataset.message, 'success');
+        }
+
+        var errorsNode = document.getElementById('loginErrorsData');
+        if (!errorsNode) {
+            return;
+        }
+
+        try {
+            var erroresLogin = JSON.parse(errorsNode.textContent || '[]');
+            erroresLogin.forEach(function(errorMsg) {
+                mostrarToast(errorMsg, 'error');
+            });
+        } catch (e) {
+            console.error('No se pudieron procesar los errores de login.', e);
+        }
+    });
+</script>
 </body>
 </html>

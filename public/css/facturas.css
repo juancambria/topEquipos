@@ -1016,6 +1016,9 @@
 #modalEquipoFactura.show,
 #modalEquipoFactura[aria-hidden="false"] {
     display: flex !important;
+    align-items: flex-start;
+    padding-top: 10px;
+    padding-bottom: 0;
 }
 
 #modalEquipo .modal-equipo,
@@ -1024,6 +1027,8 @@
     width: 95%;
     border-radius: 14px;
     box-shadow: 0 18px 45px rgba(0,0,0,0.25);
+    margin: 0 auto;
+    max-height: calc(100vh - 10px);
 }
 
 #modalEquipo .modal-equipo-header,
@@ -1032,14 +1037,27 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 16px 20px;
+    padding: 10px 16px;
     border-bottom: 1px solid #e6e6e6;
     background: linear-gradient(180deg, #ffffff, #f8fafc);
 }
 
+#modalEquipo .modal-equipo-header h2,
+#modalEquipoFactura .modal-equipo-header h2 {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+#modalEquipo .modal-equipo-header .modal-cerrar,
+#modalEquipoFactura .modal-equipo-header .modal-cerrar {
+    font-size: 20px;
+}
+
 #modalEquipo .modal-equipo-body,
 #modalEquipoFactura .modal-equipo-body {
-    padding: 18px 20px;
+    padding: 12px 16px;
+    max-height: calc(100vh - 92px);
 }
 
 #modalEquipo .modal-equipo-layout,
