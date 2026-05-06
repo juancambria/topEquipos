@@ -64,7 +64,8 @@
             const formData = new FormData(form);
             const response = await fetch(form.action, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest' })
             });
             
             const text = await response.text();
@@ -74,7 +75,9 @@
             } catch {
                 mostrarToast('Operación completada correctamente', 'success');
                 forceCerrarModalModelo();
-                setTimeout(() => location.reload(), 1000);
+                ejecutarTrasToastVisible(function() {
+                    location.reload();
+                });
                 return;
             }
             
@@ -83,8 +86,13 @@
             }
             
             mostrarToast(data.message || 'Operación completada', 'success');
+            if (form.action.includes('/crear') && data && data.id != null && typeof CrudCommon.setPersistedSelection === 'function') {
+                CrudCommon.setPersistedSelection('#tablaModelos tbody tr[data-id]', data.id);
+            }
             forceCerrarModalModelo();
-            setTimeout(() => location.reload(), 1000);
+            ejecutarTrasToastVisible(function() {
+                location.reload();
+            });
         } catch (error) {
             mostrarToast('Error: ' + error.message, 'error');
         } finally {

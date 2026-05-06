@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Equipo;
+use App\Models\Factura;
+use App\Models\FacturaDetalle;
 use App\Models\Marca;
 use App\Models\Tipo;
 use App\Models\Modelo;
@@ -136,16 +138,16 @@ class EquipoController extends Controller
         }
 
         $equipos = $query->get();
+        $this->anexarDatosFacturaAEquipos($equipos);
 
         $marcas      = Marca::activos()->orderBy('marca')->get();
         $tipos       = Tipo::activos()->orderBy('nombreTipo')->get();
         $modelos     = Modelo::activos()->orderBy('modelo')->get();
-        $proveedores = Proveedor::activos()->orderBy('proveedor')->get();
         $ubicaciones = Ubicacion::activos()->orderBy('nombre')->get();
         $sectores    = Sector::activos()->orderBy('nombre')->get();
 
         return view('equipos.index', compact(
-            'equipos', 'marcas', 'tipos', 'modelos', 'proveedores', 'ubicaciones', 'sectores'
+            'equipos', 'marcas', 'tipos', 'modelos', 'ubicaciones', 'sectores'
         ));
     }
 
@@ -211,16 +213,16 @@ class EquipoController extends Controller
         }
 
         $equipos = $query->get();
+        $this->anexarDatosFacturaAEquipos($equipos);
 
         $marcas      = Marca::orderBy('marca')->get();
         $tipos       = Tipo::orderBy('nombreTipo')->get();
         $modelos     = Modelo::orderBy('modelo')->get();
-        $proveedores = Proveedor::orderBy('proveedor')->get();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $sectores    = Sector::orderBy('nombre')->get();
 
         return view('equipos.index', compact(
-            'equipos', 'marcas', 'tipos', 'modelos', 'proveedores', 'ubicaciones', 'sectores'
+            'equipos', 'marcas', 'tipos', 'modelos', 'ubicaciones', 'sectores'
         ));
     }
 
@@ -246,6 +248,7 @@ class EquipoController extends Controller
             'imagen'        => 'nullable|image|mimes:jpeg,png,gif|max:2048',
             'vtoGarantia'   => 'nullable|date',
             'precio'        => 'nullable|numeric|min:0',
+            'idDetalleFactura' => 'nullable|integer|exists:factura_detalles,idFacturaDet',
         ]);
 
         $data['informa_al_seguro'] = $this->normalizarInformaSeguroRequest($request);
@@ -291,6 +294,16 @@ class EquipoController extends Controller
         }
 
         $esSolicitudFactura = $request->input('origen') === 'factura';
+        if ($esSolicitudFactura && $request->filled('idDetalleFactura')) {
+            $detalle = FacturaDetalle::query()
+                ->where('idFacturaDet', (int) $request->input('idDetalleFactura'))
+                ->first();
+            if ($detalle) {
+                $cantidad = (float) ($detalle->cantidad ?? 0);
+                $precioRenglon = (float) ($detalle->precioUnitario ?? 0);
+                $data['precio'] = $cantidad > 0 ? ($precioRenglon / $cantidad) : 0;
+            }
+        }
 
         if ($esSolicitudFactura) {
             return response()->json([
@@ -324,9 +337,8 @@ class EquipoController extends Controller
     {
         $equipo = Equipo::activos()->findOrFail($id);
         $this->mergeCleaned($request, [
-            'serie' => $this->cleanString($request->input('serie')),
-            'observacion' => $this->cleanTextarea($request->input('observacion')),
-            'idProveedor' => $request->input('idProveedor') ?: null,
+            'serie'         => $this->cleanString($request->input('serie')),
+            'observacion'   => $this->cleanTextarea($request->input('observacion')),
             'numeroFactura' => $this->cleanString($request->input('numeroFactura')),
         ]);
 
@@ -336,7 +348,6 @@ class EquipoController extends Controller
             'idMarca'       => 'required|exists:marcas,idMarca',
             'idTipo'        => 'required|exists:tipos,idTipo',
             'idModelo'      => 'required|exists:modelos,idModelo',
-            'idProveedor'   => 'nullable|exists:proveedores,idProveedor',
             'numeroFactura' => 'nullable|string|max:50',
             'ubicacion_id'  => 'required|exists:ubicaciones,id',
             'sector_id'     => 'required|exists:sectores,id',
@@ -506,5 +517,64 @@ class EquipoController extends Controller
                 'idModelo' => 'El modelo seleccionado no corresponde a la marca y tipo elegidos.',
             ]);
         }
+    }
+
+    protected function anexarDatosFacturaAEquipos($equipos): void
+    {
+        $numerosFactura = $equipos->pluck('numeroFactura')->filter()->unique()->values();
+        if ($numerosFactura->isEmpty()) {
+            return;
+        }
+
+        $facturasPorNumero = Factura::query()
+            ->with('proveedor:idProveedor,proveedor')
+            ->whereIn('numero', $numerosFactura)
+            ->get()
+            ->keyBy('numero');
+
+        $idsFactura = $facturasPorNumero->pluck('idFactura')->filter()->unique()->values();
+        $detallesPorFacturaConcepto = FacturaDetalle::query()
+            ->whereIn('idFactura', $idsFactura)
+            ->where('operacion', 'compra')
+            ->where('de', 'Equipo')
+            ->get(['idFactura', 'concepto', 'cantidad', 'precioUnitario'])
+            ->groupBy(function ($detalle) {
+                $concepto = trim((string) ($detalle->concepto ?? ''));
+                return (string) $detalle->idFactura . '|' . mb_strtolower($concepto);
+            });
+
+        $equipos->each(function ($equipo) use ($facturasPorNumero, $detallesPorFacturaConcepto) {
+            $factura = $facturasPorNumero->get($equipo->numeroFactura);
+            $equipo->factura_total = $factura?->total;
+            $equipo->factura_fecha = $factura?->fecha?->format('Y-m-d');
+            $equipo->factura_proveedor_id = $factura?->idProveedor;
+            $equipo->factura_proveedor_nombre = $factura?->proveedor?->proveedor;
+
+            $equipo->factura_precio_equipo = null;
+            if (! $factura) {
+                return;
+            }
+
+            $prefijo = 'Creado desde factura - ';
+            $obs = trim((string) ($equipo->observacion ?? ''));
+            if (!str_starts_with($obs, $prefijo)) {
+                return;
+            }
+
+            $concepto = trim(substr($obs, strlen($prefijo)));
+            if ($concepto === '') {
+                return;
+            }
+
+            $clave = (string) $factura->idFactura . '|' . mb_strtolower($concepto);
+            $detalle = $detallesPorFacturaConcepto->get($clave)?->first();
+            if (! $detalle) {
+                return;
+            }
+
+            $cantidad = (float) ($detalle->cantidad ?? 0);
+            $precioRenglon = (float) ($detalle->precioUnitario ?? 0);
+            $equipo->factura_precio_equipo = $cantidad > 0 ? ($precioRenglon / $cantidad) : 0;
+        });
     }
 }

@@ -152,8 +152,13 @@
                     }
 
                     mostrarToast(data.message || 'Operación completada', 'success');
+                    if (esCrear && data.id != null && typeof CrudCommon.setPersistedSelection === 'function') {
+                        CrudCommon.setPersistedSelection('table[id^="tablaContactos"] tbody tr[data-id]', data.id);
+                    }
                     forceCerrarModalContacto();
-                    location.reload();
+                    ejecutarTrasToastVisible(function() {
+                        location.reload();
+                    });
 
                 } catch (error) {
                     console.error('Fetch error:', error);
@@ -291,7 +296,9 @@
                     .then(data => {
                         if (data.success) {
                             mostrarToast(data.message, 'success');
-                            location.reload(); // Refresh para actualizar tabla
+                            ejecutarTrasToastVisible(function() {
+                                location.reload();
+                            });
                         } else {
                             mostrarToast(data.error || 'Error desconocido', 'error');
                         }

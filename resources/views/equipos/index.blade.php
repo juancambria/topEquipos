@@ -127,11 +127,17 @@
                     data-id-proveedor="{{ $e->idProveedor ?? '' }}"
                     data-ubicacion-id="{{ $e->ubicacion_id ?? '' }}"
                     data-sector-id="{{ $e->sector_id ?? '' }}"
-                    data-numero-factura="{{ $e->numeroFactura ?? $e->id }}"
+                    data-numero-factura="{{ $e->numeroFactura ? e($e->numeroFactura) : '' }}"
+                    data-proveedor-nombre="{{ e($e->factura_proveedor_nombre ?? ($e->proveedor->proveedor ?? '')) }}"
                     data-observacion="{{ e($e->observacion ?? '') }}"
                     data-vto-garantia="{{ $e->vtoGarantia ?? '' }}"
                     data-fecha-inicio-garantia="{{ $e->created_at ? $e->created_at->format('Y-m-d') : '' }}"
                     data-precio="{{ $e->precio ?? '' }}"
+                    data-factura-precio-equipo="{{ $e->factura_precio_equipo ?? '' }}"
+                    data-factura-total="{{ $e->factura_total ?? '' }}"
+                    data-factura-fecha="{{ $e->factura_fecha ?? '' }}"
+                    data-factura-proveedor-id="{{ $e->factura_proveedor_id ?? '' }}"
+                    data-factura-proveedor-nombre="{{ e($e->factura_proveedor_nombre ?? '') }}"
                     data-informa-seguro="{{ $e->informa_al_seguro ? 1 : 0 }}"
                     data-imagen="{{ $e->imagen ?? '' }}">
                     <td>{{ $e->id }}</td>
@@ -140,7 +146,7 @@
                     <td>{{ $e->marca->marca ?? '—' }}</td>
                     <td>{{ $e->modelo->modelo ?? '—' }}</td>
                     <td>{{ $e->proveedor->proveedor ?? '—' }}</td>
-                    <td>{{ $e->numeroFactura ?? $e->id }}</td>
+                    <td>{{ $e->numeroFactura ?: '—' }}</td>
                     <td>{{ $e->ubicacion->nombre ?? '—' }}</td>
                     <td>{{ $e->sector->nombre ?? '—' }}</td>
                 </tr>
@@ -166,8 +172,8 @@
         <form id="formEquipo" method="POST" class="modal-equipo-body" enctype="multipart/form-data">
             @csrf
             <input type="hidden" id="equipoNumeroFactura" name="numeroFactura">
-            <div class="modal-equipo-grid">
-                <div class="modal-equipo-row modal-equipo-row-3">
+            <div class="modal-equipo-layout">
+                <div class="modal-equipo-col modal-equipo-col-main">
                     <div class="form-grupo">
                         <label for="equipoIdTipo">Tipo *</label>
                         <div class="input-group">
@@ -212,9 +218,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="modal-equipo-row modal-equipo-row-3">
                     <div class="form-grupo">
                         <label for="equipoSerie">Serie *</label>
                         <input type="text" id="equipoSerie" name="serie" required autocomplete="off" class="form-control">
@@ -222,13 +226,12 @@
                     </div>
 
                     <div class="form-grupo form-grupo-garantia">
-                        <label for="equipoGarantiaDias">ㅤ</label>
-                        <div class="input-group garantia-input-group">
+                        <div class="garantia-linea">
                             <span class="garantia-texto">Garantía de</span>
-                            <input type="number" id="equipoGarantiaDias" min="0" max="999" step="1" value="" class="form-control garantia-dias-input" placeholder="días">
+                            <input type="number" id="equipoGarantiaDias" min="0" max="999" step="1" value="" class="form-control garantia-dias-input" placeholder="0" aria-label="Garantía en días">
                             <span class="garantia-texto">días</span>
+                            <span id="equipoGarantiaPreview" class="garantia-preview">(vence: —)</span>
                         </div>
-                        <small id="equipoGarantiaPreview" class="garantia-preview">(vence: —)</small>
                         <input type="hidden" id="equipoGarantiaBase" value="">
                         <input type="hidden" id="equipoVtoGarantia" name="vtoGarantia" value="">
                     </div>
@@ -237,9 +240,7 @@
                         <label for="equipoPrecio">Precio</label>
                         <input type="number" step="0.01" id="equipoPrecio" name="precio" placeholder="0.00" class="form-control">
                     </div>
-                </div>
 
-                <div class="modal-equipo-row modal-equipo-row-1">
                     <div class="form-grupo form-grupo-check">
                         <input type="hidden" name="informa_al_seguro" value="0">
                         <label class="form-check-label" for="equipoInformaSeguro">
@@ -247,9 +248,7 @@
                             Informa al seguro
                         </label>
                     </div>
-                </div>
 
-                <div class="modal-equipo-row modal-equipo-row-2">
                     <div class="form-grupo">
                         <label for="equipoUbicacionId">Ubicación *</label>
                         <div class="input-group">
@@ -279,42 +278,53 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
 
-                <div class="modal-equipo-row modal-equipo-row-1" id="equipoProveedorRow" style="display: none;">
+                <aside class="modal-equipo-col modal-equipo-col-side">
                     <div class="form-grupo">
-                        <label for="equipoIdProveedor">Proveedor</label>
-                        <select id="equipoIdProveedor" name="idProveedor" class="form-control">
-                            <option value="">— Sin especificar —</option>
-                            @foreach($proveedores as $p)
-                                <option value="{{ $p->idProveedor }}">{{ $p->proveedor }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="modal-equipo-row modal-equipo-row-2">
-                    <div class="form-grupo full-width form-grupo-imagen">
-                    <label>Imagen del equipo</label>
-                    <input type="file" id="equipoImagen" name="imagen" accept="image/*">
-                    <input type="hidden" id="imagenActual" name="imagen_actual" value="">
-                    <div class="preview-imagen" id="previewImagen">
-                        <div class="preview-imagen-container">
-                            <img id="previewImgTag" src="" alt="Previsualización">
-                            <button type="button" id="btnEliminarImagen" class="btn-eliminar-imagen" style="display: none;" title="Eliminar imagen">&times;</button>
-                        </div>
-                        <div class="placeholder" id="previewPlaceholder">
-                            Click para seleccionar imagen
-                        </div>
-                    </div>
-                    <small style="color: #666; font-size: 11px; margin-top: 4px; display: block;">Formatos: JPG, PNG, GIF. Tamaño máx: 2MB</small>
-                    </div>
-
-                    <div class="form-grupo full-width">
                         <label for="equipoObservacion">Observación</label>
-                        <textarea id="equipoObservacion" name="observacion" rows="3" class="form-control"></textarea>
+                        <textarea id="equipoObservacion" name="observacion" rows="5" class="form-control"></textarea>
                     </div>
-                </div>
+
+                    <div class="form-grupo form-grupo-imagen">
+                        <label for="equipoImagen">Imagen del equipo</label>
+                        <input type="file" id="equipoImagen" name="imagen" accept="image/*" class="form-control-file-input">
+                        <input type="hidden" id="imagenActual" name="imagen_actual" value="">
+                        <div class="preview-imagen preview-imagen--modal" id="previewImagen">
+                            <div class="preview-imagen-container">
+                                <img id="previewImgTag" src="">
+                                <button type="button" id="btnEliminarImagen" class="btn-eliminar-imagen" style="display: none;" title="Eliminar imagen">&times;</button>
+                            </div>
+                            <div class="placeholder" id="previewPlaceholder">
+                                Tocá para elegir imagen
+                            </div>
+                        </div>
+                        <small class="form-grupo-imagen-hint">Formatos: JPG, PNG, GIF. Máx. 2&nbsp;MB</small>
+                    </div>
+
+                    <div id="equipoPanelFactura" class="equipo-panel-factura" hidden>
+                        <h3 class="equipo-panel-factura-titulo">Datos de la factura de compra</h3>
+                        <dl class="equipo-panel-factura-dl">
+                            <div class="equipo-panel-factura-fila">
+                                <dt>Fecha</dt>
+                                <dd id="equipoPanelFacturaFecha">—</dd>
+                            </div>
+                            <div class="equipo-panel-factura-fila">
+                                <dt>Proveedor</dt>
+                                <dd id="equipoPanelFacturaProveedor">—</dd>
+                            </div>
+                            <div class="equipo-panel-factura-fila">
+                                <dt>N° factura</dt>
+                                <dd id="equipoPanelFacturaNumero">—</dd>
+                            </div>
+                            <div class="equipo-panel-factura-fila">
+                                <dt>Precio</dt>
+                                <dd id="equipoPanelFacturaPrecio">—</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </aside>
             </div>
 
             <div class="modal-equipo-footer">

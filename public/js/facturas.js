@@ -21,6 +21,9 @@
 
   const FACTURA_MAX_PDFS = 5;
   const FACTURA_MAX_PDF_BYTES = 16 * 1024 * 1024;
+  const FACTURA_ROW_SELECTOR = '#tablaFacturas tbody tr[data-id]';
+  const FACTURA_SELECTION_KEY = `crud-selection::${window.location.pathname}::${FACTURA_ROW_SELECTOR}`;
+  const FACTURA_PENDING_NUMERO_KEY = `crud-pending-created::${window.location.pathname}::factura-numero`;
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -58,6 +61,130 @@
     const d = toDateSafe(iso);
     return d ? d.toLocaleDateString('es-AR') : '—';
   };
+
+  function persistFacturaSelection(id) {
+    try {
+      if (!id) {
+        sessionStorage.removeItem(FACTURA_SELECTION_KEY);
+        return;
+      }
+      sessionStorage.setItem(FACTURA_SELECTION_KEY, String(id));
+    } catch (_) {}
+  }
+
+  function readPersistedFacturaId() {
+    try {
+      return sessionStorage.getItem(FACTURA_SELECTION_KEY) || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function savePendingFacturaNumero(numero) {
+    try {
+      const val = String(numero || '').trim();
+      if (!val) {
+        sessionStorage.removeItem(FACTURA_PENDING_NUMERO_KEY);
+        return;
+      }
+      sessionStorage.setItem(FACTURA_PENDING_NUMERO_KEY, val);
+    } catch (_) {}
+  }
+
+  function applyPendingFacturaNumeroSelection() {
+    let numero = '';
+    try {
+      numero = (sessionStorage.getItem(FACTURA_PENDING_NUMERO_KEY) || '').trim();
+    } catch (_) {
+      numero = '';
+    }
+    if (!numero) return null;
+
+    const row = $$(FACTURA_ROW_SELECTOR).find((it) => String(it.dataset.numero || '').trim() === numero) || null;
+    try { sessionStorage.removeItem(FACTURA_PENDING_NUMERO_KEY); } catch (_) {}
+    return row || null;
+  }
+
+  function formatPrecioEquipoPanel(v) {
+    if (v === '' || v == null) return '—';
+    const n = Number(String(v).replace(',', '.'));
+    if (!Number.isFinite(n)) return String(v);
+    return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function refreshEquipoFacturaPanelLateral() {
+    const num = document.getElementById('equipoFacturaNumeroFactura')?.value?.trim() || '';
+    const fecha = document.getElementById('fecha')?.value?.trim() || '';
+    const equipoActual = state.equiposPendientes[state.indiceEquipoActual] || null;
+    const precioFacturaEquipo = Number(equipoActual?.precioPorEquipo);
+    const precioEquipoTxt = Number.isFinite(precioFacturaEquipo) && precioFacturaEquipo > 0
+      ? precioFacturaEquipo
+      : (document.getElementById('equipoFacturaPrecio')?.value?.trim() || '');
+    const provSel = document.getElementById('equipoFacturaIdProveedor');
+    let provText = '—';
+    if (provSel && provSel.selectedIndex >= 0) {
+      provText = (provSel.options[provSel.selectedIndex].text || '').trim() || '—';
+    }
+    const provId = provSel?.value?.trim() || '';
+    if (provId && provText !== '—') {
+      provText = `${provId} - ${provText}`;
+    }
+    if (provText === '—' || provText === '— Sin especificar —' || /^Sin especificar/i.test(provText)) {
+      provText = '—';
+    }
+    const elF = document.getElementById('equipoFacturaPanelFecha');
+    const elP = document.getElementById('equipoFacturaPanelPrecio');
+    const elPr = document.getElementById('equipoFacturaPanelProveedor');
+    const elN = document.getElementById('equipoFacturaPanelNumero');
+    if (elF) elF.textContent = fecha ? formatDateAr(fecha) : '—';
+    if (elP) elP.textContent = formatPrecioEquipoPanel(precioEquipoTxt);
+    if (elPr) elPr.textContent = provText;
+    if (elN) elN.textContent = num || '—';
+  }
+
+  function resetImagenEquipoFactura() {
+    const input = document.getElementById('equipoFacturaImagen');
+    const preview = document.getElementById('previewImagenFactura');
+    const img = document.getElementById('previewImgTagFactura');
+    const ph = document.getElementById('previewPlaceholderFactura');
+    const btn = document.getElementById('btnEliminarImagenFactura');
+    if (input) input.value = '';
+    if (img) img.src = '';
+    if (preview) preview.classList.remove('has-image');
+    if (ph) ph.style.display = '';
+    if (btn) btn.style.display = 'none';
+  }
+
+  function initImagenPreviewEquipoFactura() {
+    const input = document.getElementById('equipoFacturaImagen');
+    const preview = document.getElementById('previewImagenFactura');
+    const img = document.getElementById('previewImgTagFactura');
+    const ph = document.getElementById('previewPlaceholderFactura');
+    const btn = document.getElementById('btnEliminarImagenFactura');
+    if (!input || !preview || input.dataset.facturaPreviewBound === '1') return;
+    input.dataset.facturaPreviewBound = '1';
+    const showFile = (file) => {
+      if (!file || !file.type.startsWith('image/')) return;
+      const rd = new FileReader();
+      rd.onload = () => {
+        if (img) img.src = rd.result;
+        preview.classList.add('has-image');
+        if (ph) ph.style.display = 'none';
+        if (btn) btn.style.display = 'flex';
+      };
+      rd.readAsDataURL(file);
+    };
+    input.addEventListener('change', function () {
+      showFile(this.files && this.files[0]);
+    });
+    preview.addEventListener('click', () => input.click());
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetImagenEquipoFactura();
+      });
+    }
+  }
 
   function formatBytesFacturaPdf(n) {
     const num = typeof n === 'number' ? n : parseInt(n, 10);
@@ -546,7 +673,7 @@
     diasInput.value = raw;
     const vto = addDaysToISO(baseInput.value, dias);
     vtoInput.value = vto;
-    preview.innerHTML = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vence: ' + formatDateAr(vto) + ')';
+    preview.textContent = '(vence: ' + formatDateAr(vto) + ')';
   }
 
 function setGarantiaFactura(baseIso, vtoIso = '') {
@@ -1154,6 +1281,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const rowIndex = parseInt(fila.dataset.index || '0', 10);
     const cantidadRaw = toNum($('.input-cantidad', fila)?.value);
     const cantidad = Math.max(1, Math.trunc(cantidadRaw));
+    const precioRenglon = toNum($('.input-precio', fila)?.value);
+    const precioPorEquipo = cantidad > 0 ? (precioRenglon / cantidad) : 0;
     const concepto = ($('.input-concepto', fila)?.value || 'equipos').trim();
 
     const proxy = `detalle_row_${rowIndex}_${Date.now()}`;
@@ -1174,6 +1303,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       idDetalle: proxy,
       concepto,
       index: i,
+      precioPorEquipo: precioPorEquipo > 0 ? Number(precioPorEquipo.toFixed(4)) : 0,
     }));
     state.indiceEquipoActual = 0;
 
@@ -1192,6 +1322,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const resumenCount = Array.isArray(obtenerMapResumenEquipos()[proxy]) ? obtenerMapResumenEquipos()[proxy].length : 0;
     const concepto = ($('.input-concepto', fila)?.value || 'equipos').trim();
     const total = Math.max(1, Math.trunc(tracker?.total || toNum($('.input-cantidad', fila)?.value) || 1));
+    const precioRenglon = toNum($('.input-precio', fila)?.value);
+    const precioPorEquipo = total > 0 ? (precioRenglon / total) : 0;
     const creados = Math.max(0, Math.trunc(Math.max(tracker?.creados || 0, resumenCount)));
 
     state.renglonPendienteActualIndex = parseInt(fila.dataset.index || '0', 10);
@@ -1199,6 +1331,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       idDetalle: proxy,
       concepto,
       index: i,
+      precioPorEquipo: precioPorEquipo > 0 ? Number(precioPorEquipo.toFixed(4)) : 0,
     }));
     state.indiceEquipoActual = Math.min(creados, Math.max(total - 1, 0));
 
@@ -1847,15 +1980,17 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
   }
 
   function selectFacturaRow(row) {
-    $$('#tablaFacturas tbody tr[data-id]').forEach((tr) => tr.classList.remove('seleccionado'));
+    $$(FACTURA_ROW_SELECTOR).forEach((tr) => tr.classList.remove('seleccionado'));
     if (!row) {
       state.selectedFacturaId = null;
+      persistFacturaSelection(null);
       updateFacturaToolbarState();
       return;
     }
 
     row.classList.add('seleccionado');
     state.selectedFacturaId = row.dataset.id || null;
+    persistFacturaSelection(state.selectedFacturaId);
     updateFacturaToolbarState();
   }
 
@@ -1864,7 +1999,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     if (!page || page.dataset.facturaToolbarBound === '1') return;
     page.dataset.facturaToolbarBound = '1';
 
-    const rows = $$('#tablaFacturas tbody tr[data-id]');
+    const rows = $$(FACTURA_ROW_SELECTOR);
 
     rows.forEach((row) => {
       if (!row.hasAttribute('tabindex')) row.setAttribute('tabindex', '-1');
@@ -1873,6 +2008,17 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
       row.addEventListener('click', () => selectFacturaRow(row));
     });
+
+    const restoredByNumero = applyPendingFacturaNumeroSelection();
+    if (restoredByNumero) {
+      selectFacturaRow(restoredByNumero);
+    } else {
+      const persistedId = readPersistedFacturaId();
+      if (persistedId) {
+        const restoredById = $$(FACTURA_ROW_SELECTOR).find((it) => String(it.dataset.id || '') === String(persistedId)) || null;
+        if (restoredById) selectFacturaRow(restoredById);
+      }
+    }
 
     const btnDetalle = document.getElementById('btnVerDetalleFactura');
     const btnBaja = document.getElementById('btnBajaFacturaToolbar');
@@ -2339,7 +2485,12 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     }
     set('equipoFacturaUbicacionId', d.ubicacion_id);
     if (d.ubicacion_id) cargarSectoresPorUbicacionYSeleccionar(d.ubicacion_id, d.sector_id || null);
-    set('equipoFacturaPrecio', d.precio);
+    const precioFacturaEquipo = Number(equipoActual?.precioPorEquipo);
+    if (Number.isFinite(precioFacturaEquipo) && precioFacturaEquipo > 0) {
+      set('equipoFacturaPrecio', precioFacturaEquipo.toFixed(2));
+    } else {
+      set('equipoFacturaPrecio', d.precio);
+    }
     set('equipoFacturaObservacion', d.observacion);
     setGarantiaFactura(document.getElementById('equipoFacturaGarantiaBase')?.value || document.getElementById('fecha')?.value || new Date().toISOString().slice(0, 10), d.vtoGarantia || '');
     const checkSeguro = document.getElementById('equipoFacturaInformaSeguro');
@@ -2356,6 +2507,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const equipo = state.equiposPendientes[state.indiceEquipoActual];
     if (!modal || !equipo) return;
 
+    resetImagenEquipoFactura();
+
     const total = state.equiposPendientes.length;
 
     const set = (id, value) => {
@@ -2371,7 +2524,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     set('equipoFacturaIdDetalleFactura', equipo.idDetalle || '');
     set('equipoFacturaSerie', '');
     set('equipoFacturaObservacion', `Creado desde factura - ${equipo.concepto || 'Equipo'}`);
-    set('equipoFacturaPrecio', '');
+    const precioPorEquipo = Number.isFinite(Number(equipo.precioPorEquipo)) ? Number(equipo.precioPorEquipo) : 0;
+    set('equipoFacturaPrecio', precioPorEquipo > 0 ? precioPorEquipo.toFixed(2) : '');
     set('equipoFacturaIdTipo', '');
     cargarMarcasFacturaPorTipoYSeleccionar('', null);
     const selectModelo = document.getElementById('equipoFacturaIdModelo');
@@ -2410,9 +2564,10 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     setGarantiaFactura(fechaFactura, '');
 
     aplicarAutoCompletarEquipo(equipo);
+    refreshEquipoFacturaPanelLateral();
 
     setModalVisible('modalEquipoFactura', true, true);
-    setTimeout(() => document.getElementById('equipoFacturaSerie')?.focus(), 80);
+    setTimeout(() => document.getElementById('equipoFacturaIdTipo')?.focus(), 80);
   }
 
   function initDatosEquiposDesdeSession() {
@@ -2517,6 +2672,10 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       }
 
       form.dataset.facturaConfirmada = '1';
+      if (!isEdit) {
+        const numeroIngresado = document.getElementById('numero')?.value?.trim() || '';
+        savePendingFacturaNumero(numeroIngresado);
+      }
       prepararCamposFacturaParaSubmit();
       sincronizarDetallesFacturaEnFormulario(form);
       if (typeof form.requestSubmit === 'function') form.requestSubmit();
@@ -2612,6 +2771,13 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const inputSerie = document.getElementById('equipoFacturaSerie');
     if (!form || form.dataset.facturasBound === '1') return;
     form.dataset.facturasBound = '1';
+
+    initImagenPreviewEquipoFactura();
+    const precioPanelInp = document.getElementById('equipoFacturaPrecio');
+    if (precioPanelInp && precioPanelInp.dataset.equipoFacturaPanelBound !== '1') {
+      precioPanelInp.dataset.equipoFacturaPanelBound = '1';
+      precioPanelInp.addEventListener('input', refreshEquipoFacturaPanelLateral);
+    }
 
     if (inputSerie) {
       inputSerie.addEventListener('input', () => {

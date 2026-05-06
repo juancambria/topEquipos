@@ -91,6 +91,9 @@
                 }
 
                 mostrarToast(data.message || 'Sector guardado correctamente', 'success');
+                if (!sectorEditMode && data && data.id != null && typeof CrudCommon.setPersistedSelection === 'function') {
+                    CrudCommon.setPersistedSelection('#tablaSectores tbody tr[data-id]', data.id);
+                }
                 forceCerrarModalSector();
 
                 if (overlayUbicaciones && overlayUbicaciones.getAttribute('aria-hidden') === 'false' && currentSector.id) {
@@ -106,7 +109,7 @@
                     return;
                 }
 
-                setTimeout(recargarVista, 250);
+                ejecutarTrasToastVisible(recargarVista);
             } catch (error) {
                 console.error(error);
                 mostrarToast('Error al guardar el sector', 'error');
@@ -243,7 +246,7 @@
                             }
 
                             mostrarToast(data.message || 'Sector eliminado correctamente', 'success');
-                            setTimeout(recargarVista, 250);
+                            ejecutarTrasToastVisible(recargarVista);
                         } catch (error) {
                             console.error(error);
                             mostrarToast('Error al eliminar el sector', 'error');

@@ -552,10 +552,17 @@
                             throw new Error(firstMessage || result.data.message || 'No se pudo crear la ubicación');
                         }
 
+                        var msgOk = result.data.message || 'Ubicación creada correctamente';
+                        mostrarToast(msgOk, 'success');
+                        if (result.data.id != null && typeof CrudCommon.setPersistedSelection === 'function') {
+                            CrudCommon.setPersistedSelection('#tablaUbicaciones tbody tr[data-id]', result.data.id);
+                        }
                         var url = new URL(window.location.href);
                         url.searchParams.set('abrirSectores', String(result.data.id));
                         url.searchParams.set('ubicacionNombre', result.data.nombre || '');
-                        window.location.href = url.toString();
+                        ejecutarTrasToastVisible(function() {
+                            window.location.href = url.toString();
+                        });
                     })
                     .catch(function(error) {
                         mostrarToast(error.message || 'Error al crear la ubicación', 'error');

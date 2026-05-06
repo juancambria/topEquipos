@@ -291,8 +291,13 @@
                 .then(data => {
                     if (data.success) {
                         mostrarToast(data.message, 'success');
+                        if (esCrear && data.id != null && typeof CrudCommon.setPersistedSelection === 'function') {
+                            CrudCommon.setPersistedSelection('#tablaProveedores tbody tr[data-id]', data.id);
+                        }
                         forceCerrarModalProveedor();
-                        location.reload();
+                        ejecutarTrasToastVisible(function() {
+                            location.reload();
+                        });
                     } else {
                         mostrarToast('Error: ' + (data.message || 'Error desconocido'), 'error');
                     }

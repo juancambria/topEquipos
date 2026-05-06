@@ -106,6 +106,9 @@
 
                     mostrarToast('Marca guardada correctamente', 'success');
                     if (esCrear) marcaCreada = true;
+                    if (data.id != null && typeof CrudCommon.setPersistedSelection === 'function') {
+                        CrudCommon.setPersistedSelection('#tablaMarcas tbody tr[data-id]', data.id);
+                    }
                     forceCerrarModalMarca();
                     if (data.id) {
                         setTimeout(() => abrirModalTiposMarca(data.id, data.nombre), 300);

@@ -35,6 +35,22 @@
         }, 3500);
     };
 
+    /**
+     * Ejecuta una acción que destruye/recarga la página (p. ej. location.reload)
+     * después de un margen por defecto, para que el toast de éxito sea visible.
+     * @param {function(): void} callback
+     * @param {number} [delayMs] — si se omite, usa TOAST_MS_ANTES_ACCION_DESTRUCTIVA
+     */
+    window.TOAST_MS_ANTES_ACCION_DESTRUCTIVA = 2200;
+    window.ejecutarTrasToastVisible = function(callback, delayMs) {
+        var ms = typeof delayMs === 'number' ? delayMs : (window.TOAST_MS_ANTES_ACCION_DESTRUCTIVA || 2200);
+        setTimeout(function() {
+            if (typeof callback === 'function') {
+                callback();
+            }
+        }, ms);
+    };
+
     // Modal de confirmación
     var modalConfirmacion = null;
     var callbackConfirmacion = null;

@@ -660,6 +660,52 @@ window.cerrarModalMarca = function() {
     var selectModelo = document.getElementById('equipoIdModelo');
 
     function getEl(id) { return document.getElementById(id); }
+
+    function formatPrecioPanelEquipo(v) {
+        if (v === '' || v == null) return '—';
+        var n = Number(String(v).replace(',', '.'));
+        if (!isFinite(n)) return String(v);
+        return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    var equipoPanelFacturaProveedorId = '';
+    var equipoPanelFacturaProveedorNombre = '';
+    var equipoPanelFacturaFecha = '';
+    var equipoPanelFacturaPrecio = '';
+    var equipoMostrarPanelFactura = false;
+
+    function refreshEquipoPanelFacturaMain() {
+        var panel = document.getElementById('equipoPanelFactura');
+        if (!panel) return;
+        if (!equipoMostrarPanelFactura) {
+            panel.hidden = true;
+            return;
+        }
+        var numInp = getEl('equipoNumeroFactura');
+        var num = numInp && numInp.value ? String(numInp.value).trim() : '';
+        if (!num) {
+            panel.hidden = true;
+            return;
+        }
+        panel.hidden = false;
+        var fechaDd = getEl('equipoPanelFacturaFecha');
+        if (fechaDd) fechaDd.textContent = equipoPanelFacturaFecha ? formatDateAr(equipoPanelFacturaFecha) : '—';
+        var provText = equipoPanelFacturaProveedorNombre || '—';
+        if (equipoPanelFacturaProveedorId && equipoPanelFacturaProveedorNombre) {
+            provText = String(equipoPanelFacturaProveedorId) + ' - ' + equipoPanelFacturaProveedorNombre;
+        }
+        var provDd = getEl('equipoPanelFacturaProveedor');
+        if (provDd) provDd.textContent = provText;
+        var numDd = getEl('equipoPanelFacturaNumero');
+        if (numDd) numDd.textContent = num || '—';
+        var precDd = getEl('equipoPanelFacturaPrecio');
+        if (precDd) precDd.textContent = formatPrecioPanelEquipo(equipoPanelFacturaPrecio);
+    }
+
+    function bindPanelFacturaEquipoListeners() {
+        // El panel depende de datos de factura; no necesita listeners del precio del equipo.
+    }
+
     function toNum(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
     function toDateSafe(iso) {
         if (!iso) return null;
@@ -690,7 +736,6 @@ window.cerrarModalMarca = function() {
             idTipo: getEl('equipoIdTipo') ? getEl('equipoIdTipo').value : '',
             idMarca: getEl('equipoIdMarca') ? getEl('equipoIdMarca').value : '',
             idModelo: getEl('equipoIdModelo') ? getEl('equipoIdModelo').value : '',
-            idProveedor: getEl('equipoIdProveedor') ? getEl('equipoIdProveedor').value : '',
             ubicacionId: getEl('equipoUbicacionId') ? getEl('equipoUbicacionId').value : '',
             sectorId: getEl('equipoSectorId') ? getEl('equipoSectorId').value : '',
             vtoGarantia: getEl('equipoVtoGarantia') ? getEl('equipoVtoGarantia').value : '',
@@ -708,7 +753,6 @@ window.cerrarModalMarca = function() {
             actual.idTipo ||
             actual.idMarca ||
             actual.idModelo ||
-            actual.idProveedor ||
             actual.ubicacionId ||
             actual.sectorId ||
             (actual.vtoGarantia || '').trim() ||
@@ -818,6 +862,14 @@ form.addEventListener('submit', async function(e) {
                     equipoIsSubmitting = true;
                     updateGarantiaEquipoDesdeDias();
                     if (form.action.endsWith('/crear')) {
+                        try {
+                            var serieNueva = String(getEl('equipoSerie')?.value || '').trim();
+                            if (serieNueva) {
+                                sessionStorage.setItem(equipoPendingSerieStorageKey, serieNueva);
+                            } else {
+                                sessionStorage.removeItem(equipoPendingSerieStorageKey);
+                            }
+                        } catch (e) {}
                         form.submit();
                     } else {
                         // AJAX for update like proveedores.js
@@ -869,13 +921,17 @@ form.addEventListener('submit', async function(e) {
                             if (data._legacyNonJsonOk) {
                                 mostrarToast('Operación completada', 'success');
                                 forceCerrarModalEquipo();
-                                location.reload();
+                                ejecutarTrasToastVisible(function() {
+                                    location.reload();
+                                });
                                 return;
                             }
                             if (data.success) {
                                 mostrarToast(data.message || 'Actualizado correctamente', 'success');
                                 forceCerrarModalEquipo();
-                                location.reload();
+                                ejecutarTrasToastVisible(function() {
+                                    location.reload();
+                                });
                             } else {
                                 mostrarToast(data.message || 'Error desconocido', 'error');
                             }
@@ -928,7 +984,7 @@ form.addEventListener('submit', async function(e) {
         diasEl.value = raw;
         var vto = addDaysToISO(baseEl.value, dias);
         vtoEl.value = vto;
-        previewEl.innerHTML = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vence: ' + formatDateAr(vto) + ')';
+        previewEl.textContent = '(vence: ' + formatDateAr(vto) + ')';
     }
 
 function setGarantiaEquipo(baseIso, vtoIso) {
@@ -991,10 +1047,16 @@ function setGarantiaEquipo(baseIso, vtoIso) {
         observer.observe(select, { childList: true, subtree: false });
     }
 
+    /** Evita que respuestas AJAX viejas pisen la UI si hubo varias cargas seguidas (p. ej. change + callback). */
+    var equipoMarcasFetchGen = 0;
+    var equipoModelosFetchGen = 0;
+
     function cargarMarcasPorTipo(idTipo, idMarcaSeleccionar, callback) {
         var marcaSelect = document.getElementById('equipoIdMarca') || selectMarca;
 
         if (!marcaSelect) return;
+
+        var gen = ++equipoMarcasFetchGen;
 
         var url = '/marcas/api';
         if (idTipo) {
@@ -1004,6 +1066,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
         fetch(url)
             .then(function(response) { return response.json(); })
             .then(function(marcas) {
+                if (gen !== equipoMarcasFetchGen) return;
                 marcaSelect.innerHTML = '<option value="">— Seleccionar marca —</option>';
                 marcas.forEach(function(marca) {
                     var option = document.createElement('option');
@@ -1024,27 +1087,33 @@ function setGarantiaEquipo(baseIso, vtoIso) {
     // Función para cargar modelos por marca via AJAX
     window.cargarModelosPorMarcaYTipo = function(idMarca, idTipo, callback) {
         var modeloSelect = document.getElementById('equipoIdModelo') || selectModelo;
-        
+
         if (!modeloSelect) return;
-        
+
+        var gen = ++equipoModelosFetchGen;
+
         modeloSelect.innerHTML = '<option value="">— Seleccionar modelo —</option>';
-        
-        if (idMarca && idTipo) {
-            fetch('/modelos/marca/' + idMarca + '/tipo/' + idTipo)
-                .then(response => response.json())
-                .then(modelos => {
-                    modelos.forEach(modelo => {
-                        var option = document.createElement('option');
-                        option.value = modelo.idModelo;
-                        option.textContent = modelo.modelo;
-                        modeloSelect.appendChild(option);
-                    });
-                    if (callback) callback();
-                })
-                .catch(error => {
-                    console.error('Error al cargar modelos:', error);
-                });
+
+        if (!idMarca || !idTipo) {
+            if (callback) callback();
+            return;
         }
+
+        fetch('/modelos/marca/' + idMarca + '/tipo/' + idTipo)
+            .then(function(response) { return response.json(); })
+            .then(function(modelos) {
+                if (gen !== equipoModelosFetchGen) return;
+                modelos.forEach(function(modelo) {
+                    var option = document.createElement('option');
+                    option.value = modelo.idModelo;
+                    option.textContent = modelo.modelo;
+                    modeloSelect.appendChild(option);
+                });
+                if (callback) callback();
+            })
+            .catch(function(error) {
+                console.error('Error al cargar modelos:', error);
+            });
     };
 
     // Backward compatibility
@@ -1071,7 +1140,6 @@ function setGarantiaEquipo(baseIso, vtoIso) {
         });
     }
 
-    initBuscadorSelect('buscarEquipoProveedor', 'equipoIdProveedor');
     initBuscadorSelect('buscarEquipoTipo', 'equipoIdTipo');
     initBuscadorSelect('buscarEquipoMarca', 'equipoIdMarca');
     initBuscadorSelect('buscarEquipoModelo', 'equipoIdModelo');
@@ -1138,6 +1206,10 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             console.warn('Modal de equipo no disponible en esta vista');
             return;
         }
+        ['buscarEquipoTipo', 'buscarEquipoMarca', 'buscarEquipoModelo'].forEach(function(inpId) {
+            var inp = getEl(inpId);
+            if (inp) inp.value = '';
+        });
         var dataset = null;
         
         // Si es un TR, usar sus data attributes
@@ -1157,13 +1229,18 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             getEl('equipoIdTipo').value = '';
             cargarMarcasPorTipo('', '');
             getEl('equipoIdModelo').innerHTML = '<option value="">— Seleccionar modelo —</option>';
-            getEl('equipoIdProveedor').value = '';
             getEl('equipoUbicacionId').value = '';
             getEl('equipoSectorId').value = '';
             getEl('equipoVtoGarantia').value = '';
             if (getEl('equipoInformaSeguro')) getEl('equipoInformaSeguro').checked = true;
             setGarantiaEquipo(new Date().toISOString().slice(0, 10), '');
             getEl('equipoPrecio').value = '';
+            if (getEl('equipoNumeroFactura')) getEl('equipoNumeroFactura').value = '';
+            equipoPanelFacturaProveedorId = '';
+            equipoPanelFacturaProveedorNombre = '';
+            equipoPanelFacturaFecha = '';
+            equipoPanelFacturaPrecio = '';
+            equipoMostrarPanelFactura = false;
             // Resetear imagen
             imagenInput.value = '';
             previewImgTag.src = '';
@@ -1189,23 +1266,38 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             getEl('equipoSerie').value = dataset.serie || '';
             getEl('equipoObservacion').value = dataset.observacion || '';
             getEl('equipoIdTipo').value = dataset.idTipo || '';
-            getEl('equipoIdMarca').value = dataset.idMarca || '';
-            getEl('equipoIdModelo').value = dataset.idModelo || '';
+            var idTipoEdit = dataset.idTipo || '';
+            var idMarcaEdit = dataset.idMarca || '';
+            var idModeloEdit = dataset.idModelo || '';
             getEl('equipoPrecio').value = dataset.precio || '';
             getEl('equipoVtoGarantia').value = dataset.vtoGarantia || '';
             getEl('equipoNumeroFactura').value = dataset.numeroFactura || '';
+            equipoPanelFacturaProveedorId = dataset.facturaProveedorId || '';
+            equipoPanelFacturaProveedorNombre = dataset.proveedorNombre || '';
+            if (dataset.facturaProveedorNombre) {
+                equipoPanelFacturaProveedorNombre = dataset.facturaProveedorNombre;
+            }
+            equipoPanelFacturaFecha = dataset.facturaFecha || '';
+            equipoPanelFacturaPrecio = dataset.facturaPrecioEquipo || dataset.precio || '';
+            var numeroFacturaEdit = String(dataset.numeroFactura || '').trim();
+            var idEquipoEdit = String(dataset.id || '').trim();
+            var idProveedorEdit = String(dataset.idProveedor || '').trim();
+            // No mostrar el panel para registros heredados con numeroFactura = ID.
+            equipoMostrarPanelFactura = Boolean(
+                numeroFacturaEdit && (numeroFacturaEdit !== idEquipoEdit || idProveedorEdit)
+            );
             var baseGarantia = dataset.fechaInicioGarantia || new Date().toISOString().slice(0, 10);
             setGarantiaEquipo(baseGarantia, dataset.vtoGarantia || '');
             var informaCheckbox = getEl('equipoInformaSeguro');
             if (informaCheckbox) {
                 informaCheckbox.checked = dataset.informaSeguro === '1' || dataset.informaSeguro === 'true';
             }
-            getEl('equipoIdProveedor').value = dataset.idProveedor || '';
             var idUbicacionEquipo = dataset.ubicacionId || '';
             var idSectorEquipo = dataset.sectorId || '';
             getEl('equipoUbicacionId').value = idUbicacionEquipo;
             getEl('equipoSectorId').value = idSectorEquipo;
             recargarSelectSectores(idUbicacionEquipo, idSectorEquipo);
+            refreshEquipoPanelFacturaMain();
 
             // Manejar imagen
             var imagenUrl = dataset.imagen || '';
@@ -1231,7 +1323,6 @@ function setGarantiaEquipo(baseIso, vtoIso) {
                 idTipo: String(dataset.idTipo || ''),
                 idMarca: String(dataset.idMarca || ''),
                 idModelo: String(dataset.idModelo || ''),
-                idProveedor: String(dataset.idProveedor || ''),
                 ubicacionId: String(idUbicacionEquipo || ''),
                 sectorId: String(idSectorEquipo || ''),
                 vtoGarantia: dataset.vtoGarantia || '',
@@ -1243,8 +1334,24 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             equipoHasChanges = false;
             equipoEditMode = true;
             equipoIsSubmitting = false;
+
+            cargarMarcasPorTipo(idTipoEdit, idMarcaEdit, function() {
+                cargarModelosPorMarcaYTipo(idMarcaEdit, idTipoEdit, function() {
+                    var selModelo = getEl('equipoIdModelo');
+                    if (selModelo && idModeloEdit) {
+                        selModelo.value = String(idModeloEdit);
+                    }
+                    refreshEquipoPanelFacturaMain();
+                    actualizarEstadoSubmitEquipo();
+                });
+            });
         }
-        actualizarEstadoSubmitEquipo();
+        if (mode === 'crear' || !dataset) {
+            refreshEquipoPanelFacturaMain();
+        }
+        if (!(equipoEditMode && dataset)) {
+            actualizarEstadoSubmitEquipo();
+        }
         
         // Usar clase .show para mostrar el modal
         overlay.classList.add('show');
@@ -1283,6 +1390,7 @@ function forceCerrarModalEquipo() {
 
     if (overlay) {
         overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalEquipo(); });
+        bindPanelFacturaEquipoListeners();
     }
 
     document.querySelectorAll('#tablaEquipos .fila-equipo-editar').forEach(function(row) {
@@ -1307,7 +1415,6 @@ function forceCerrarModalEquipo() {
         'equipoIdTipo',
         'equipoIdMarca',
         'equipoIdModelo',
-        'equipoIdProveedor',
         'equipoUbicacionId',
         'equipoSectorId',
         'equipoGarantiaDias',
@@ -1333,6 +1440,9 @@ function forceCerrarModalEquipo() {
     var selectedRow = null;
     var selectedEquipoId = null;
     var selectedEquipoSerie = null;
+    var equipoRowSelector = '#tablaEquipos tbody tr[data-id]';
+    var equipoSelectionStorageKey = 'crud-selection::' + window.location.pathname + '::' + equipoRowSelector;
+    var equipoPendingSerieStorageKey = 'crud-pending-created::' + window.location.pathname + '::equipo-serie';
     var selectedEquipoInfo = document.getElementById('selectedEquipoInfo');
     var btnEditarEquipo = document.getElementById('btnEditarEquipo');
     var btnBajaEquipo = document.getElementById('btnBajaEquipo');
@@ -1345,6 +1455,13 @@ function forceCerrarModalEquipo() {
             r.classList.toggle('seleccionado', isSelected);
             r.setAttribute('aria-selected', isSelected ? 'true' : 'false');
         });
+        try {
+            if (selectedEquipoId) {
+                sessionStorage.setItem(equipoSelectionStorageKey, String(selectedEquipoId));
+            } else {
+                sessionStorage.removeItem(equipoSelectionStorageKey);
+            }
+        } catch (e) {}
         if (btnBajaEquipo) {
             btnBajaEquipo.disabled = !selectedEquipoId;
         }
@@ -1382,6 +1499,35 @@ row.addEventListener('dblclick', function() {
             row.setAttribute('tabindex', '-1');
         }
     });
+
+    (function restoreEquipoSelection() {
+        try {
+            var pendingSerie = (sessionStorage.getItem(equipoPendingSerieStorageKey) || '').trim();
+            if (pendingSerie) {
+                sessionStorage.removeItem(equipoPendingSerieStorageKey);
+                var rowBySerie = Array.from(document.querySelectorAll(equipoRowSelector)).find(function(row) {
+                    return String(row.dataset.serie || '').trim() === pendingSerie;
+                });
+                if (rowBySerie) {
+                    selectedRow = rowBySerie;
+                    selectedEquipoId = rowBySerie.dataset.id || null;
+                    selectedEquipoSerie = rowBySerie.dataset.serie || null;
+                    actualizarSeleccion();
+                    return;
+                }
+            }
+            var persistedId = sessionStorage.getItem(equipoSelectionStorageKey) || '';
+            if (!persistedId) return;
+            var rowById = Array.from(document.querySelectorAll(equipoRowSelector)).find(function(row) {
+                return String(row.dataset.id || '') === String(persistedId);
+            });
+            if (!rowById) return;
+            selectedRow = rowById;
+            selectedEquipoId = rowById.dataset.id || null;
+            selectedEquipoSerie = rowById.dataset.serie || null;
+            actualizarSeleccion();
+        } catch (e) {}
+    })();
 
     if (window.CrudCommon && typeof window.CrudCommon.bindArrowRowNavigation === 'function') {
         window.CrudCommon.bindArrowRowNavigation({

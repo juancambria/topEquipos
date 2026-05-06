@@ -129,6 +129,29 @@
         return s.display !== 'none' && s.visibility !== 'hidden' && parseFloat(s.opacity || '1') !== 0;
     }
 
+    function isInsideAnyModal(el) {
+        if (!el || !el.closest) return false;
+        return !!el.closest('.modal-overlay, .modal-antiguo, .modal, .modal-confirmacion-overlay');
+    }
+
+    function buildSelectionStorageKey(rowSelector) {
+        return 'crud-selection::' + window.location.pathname + '::' + rowSelector;
+    }
+
+    function setPersistedSelection(rowSelector, id) {
+        if (!rowSelector) return;
+        try {
+            var key = buildSelectionStorageKey(rowSelector);
+            if (id == null || id === '') {
+                sessionStorage.removeItem(key);
+                return;
+            }
+            sessionStorage.setItem(key, String(id));
+        } catch (e) {
+            // Storage no disponible: continuar sin persistencia.
+        }
+    }
+
     function bindArrowRowNavigation(options) {
         var settings = Object.assign({
             rowSelector: '',
@@ -188,6 +211,7 @@
             outsideIgnoreSelectors: [],
             selectedClass: 'seleccionado',
             clearOnOutsideClick: true,
+            persistSelection: true,
             selectedInfo: null,
             formatInfo: null,
             buttons: [],
@@ -199,6 +223,42 @@
 
         function allRows() {
             return Array.prototype.slice.call(document.querySelectorAll(settings.rowSelector));
+        }
+
+        function selectionStorageKey() {
+            return buildSelectionStorageKey(settings.rowSelector);
+        }
+
+        function persistSelectedRow() {
+            if (!settings.persistSelection) return;
+            try {
+                var key = selectionStorageKey();
+                var id = selectedRow && selectedRow.dataset ? selectedRow.dataset.id : '';
+                if (!id) {
+                    sessionStorage.removeItem(key);
+                    return;
+                }
+                sessionStorage.setItem(key, String(id));
+            } catch (e) {
+                // Storage no disponible: continuar sin persistencia.
+            }
+        }
+
+        function restoreSelectedRow() {
+            if (!settings.persistSelection) return;
+            try {
+                var persistedId = sessionStorage.getItem(selectionStorageKey());
+                if (!persistedId) return;
+                var row = allRows().find(function(it) {
+                    return String(it.dataset.id || '') === String(persistedId);
+                });
+                selectedRow = row || null;
+                if (!row) {
+                    sessionStorage.removeItem(selectionStorageKey());
+                }
+            } catch (e) {
+                // Storage no disponible: continuar sin persistencia.
+            }
         }
 
         function ensureRowTabindex() {
@@ -216,6 +276,7 @@
                 row.classList.toggle(settings.selectedClass, isSelected);
                 row.setAttribute('aria-selected', isSelected ? 'true' : 'false');
             });
+            persistSelectedRow();
 
             settings.buttons.forEach(function(button) {
                 if (button) {
@@ -258,6 +319,7 @@
                 if (!selectedRow) return;
                 if (event.target.closest(settings.rowSelector)) return;
                 if (settings.ignoreSelector && event.target.closest(settings.ignoreSelector)) return;
+                if (isInsideAnyModal(event.target)) return;
                 if (settings.outsideIgnoreSelectors.some(function(selector) {
                     return event.target.closest(selector);
                 })) {
@@ -268,6 +330,7 @@
             });
         }
 
+        restoreSelectedRow();
         update();
 
         if (settings.arrowKeys) {
@@ -367,6 +430,7 @@
         jsonHeaders: jsonHeaders,
         parseResponseJsonText: parseResponseJsonText,
         responseJson: responseJson,
+        setPersistedSelection: setPersistedSelection,
         submitHiddenPost: submitHiddenPost,
     };
 })();

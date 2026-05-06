@@ -392,11 +392,8 @@ th.sortable:hover {
 }
 
 .form-grupo-garantia {
-    text-align: center;
-}
-
-.form-grupo-garantia label {
-    text-align: center;
+    text-align: left;
+    margin-bottom: 14px;
 }
 
 .garantia-input-group {
@@ -408,7 +405,7 @@ th.sortable:hover {
 
 .garantia-texto {
     color: #555;
-    font-size: 13px;
+    font-size: 14px;
     white-space: nowrap;
 }
 
@@ -418,10 +415,19 @@ th.sortable:hover {
 }
 
 .garantia-preview {
-    display: block;
-    margin-top: 6px;
+    display: inline;
     color: #555;
-    text-align: center;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.garantia-linea {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    flex-wrap: wrap;
 }
 
 .preview-imagen {

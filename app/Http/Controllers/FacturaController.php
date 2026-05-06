@@ -211,6 +211,8 @@ class FacturaController extends Controller
                         if (!empty($detalleData['operacion']) && $detalleData['operacion'] === 'compra' 
                             && !empty($detalleData['de']) && $detalleData['de'] === 'Equipo') {
                             $cantidadEquipos = intval($detalleData['cantidad'] ?? 1);
+                            $precioRenglon = (float) ($detalleData['precioUnitario'] ?? 0);
+                            $precioPorEquipo = $cantidadEquipos > 0 ? ($precioRenglon / $cantidadEquipos) : 0;
                             
                             // Crear una entrada por cada equipo
                             for ($i = 0; $i < $cantidadEquipos; $i++) {
@@ -218,6 +220,7 @@ class FacturaController extends Controller
                                     'idDetalle' => $detalle->idFacturaDet,
                                     'concepto' => $detalleData['concepto'] ?? '',
                                     'cantidad' => 1,
+                                    'precioPorEquipo' => $precioPorEquipo,
                                     // Agregar información de grupo para auto-completar
                                     'cantidadOriginal' => $cantidadEquipos,
                                     'grupoIndex' => $i,

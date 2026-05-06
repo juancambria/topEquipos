@@ -103,20 +103,20 @@
                 <input type="text" id="ubicacionCodigoPagina" name="codigo" maxlength="5" inputmode="numeric" pattern="[0-9]*" autocomplete="off" title="Hasta 5 dígitos">
             </div>
             <div class="form-grupo">
-                <label for="ubicacionCiudadPagina">Ciudad</label>
-                <input type="text" id="ubicacionCiudadPagina" name="ciudad" autocomplete="off">
-            </div>
-            <div class="form-grupo">
-                <label for="ubicacionProvinciaPagina">Provincia</label>
-                <input type="text" id="ubicacionProvinciaPagina" name="provincia" autocomplete="off">
-            </div>
-            <div class="form-grupo">
                 <label for="ubicacionTelefonoPagina">Teléfono</label>
                 <input type="text" id="ubicacionTelefonoPagina" name="telefono" autocomplete="off">
             </div>
             <div class="form-grupo">
                 <label for="ubicacionDireccionPagina">Dirección</label>
                 <input type="text" id="ubicacionDireccionPagina" name="direccion" autocomplete="off">
+            </div>
+            <div class="form-grupo">
+                <label for="ubicacionCiudadPagina">Ciudad</label>
+                <input type="text" id="ubicacionCiudadPagina" name="ciudad" autocomplete="off">
+            </div>
+            <div class="form-grupo">
+                <label for="ubicacionProvinciaPagina">Provincia</label>
+                <input type="text" id="ubicacionProvinciaPagina" name="provincia" autocomplete="off">
             </div>
             <div class="form-grupo">
                 <label for="ubicacionCodigoPostalPagina">Código Postal</label>

@@ -49,13 +49,39 @@
         
         try {
             const formData = new FormData(form);
-            formData.append('_token', CrudCommon.getCsrfToken());
-            await fetch(form.action, {
+            const response = await fetch(form.action, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest' })
             });
-            // mostrarToast('Operación completada correctamente', 'success');
+            const text = await response.text();
+            var data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (parseErr) {
+                mostrarToast('Respuesta inválida del servidor', 'error');
+                return;
+            }
+            if (!response.ok || !data.success) {
+                var msg = 'Error al guardar';
+                if (data.errors) {
+                    var vals = Object.values(data.errors);
+                    var flat = vals.length ? vals.flat() : [];
+                    if (flat.length) msg = String(flat[0]);
+                } else if (data.message) {
+                    msg = data.message;
+                }
+                mostrarToast(msg, 'error');
+                return;
+            }
+            mostrarToast(data.message || 'Operación completada correctamente', 'success');
+            if (form.action.includes('/crear') && data && data.id != null && typeof CrudCommon.setPersistedSelection === 'function') {
+                CrudCommon.setPersistedSelection('#tablaTipos tbody tr[data-id]', data.id);
+            }
             forceCerrarModalTipo();
+            ejecutarTrasToastVisible(function() {
+                location.reload();
+            });
         } catch (error) {
             console.error('Submit error:', error);
             mostrarToast('Error al guardar', 'error');
@@ -63,7 +89,6 @@
             tipoIsSubmitting = false;
             submitBtn.disabled = false;
             submitBtn.textContent = form.action.includes('/crear') ? 'Crear' : 'Actualizar';
-            setTimeout(() => location.reload(), 1500);
         }
     }
 

@@ -347,8 +347,9 @@
             <input type="hidden" name="idDetalleFactura" id="equipoFacturaIdDetalleFactura" value="">
             <input type="hidden" name="origen" value="factura">
 
-            <div class="modal-equipo-grid">
-                <div class="modal-equipo-row modal-equipo-row-3">
+            <input type="hidden" id="equipoFacturaIdProveedorHidden" name="idProveedor" value="">
+            <div class="modal-equipo-layout">
+                <div class="modal-equipo-col modal-equipo-col-main">
                     <div class="form-grupo">
                         <label for="equipoFacturaIdTipo">Tipo *</label>
                         <div class="input-group">
@@ -360,9 +361,7 @@
                             </select>
                             <input type="text" id="buscarEquipoFacturaTipo" class="form-control mt-1" placeholder="Buscar tipo..." style="display:none;">
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Tipo')" title="Crear nuevo tipo">
-                                    +
-                                </button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Tipo')" title="Crear nuevo tipo">+</button>
                             </div>
                         </div>
                     </div>
@@ -370,7 +369,7 @@
                     <div class="form-grupo">
                         <label for="equipoFacturaIdMarca">Marca *</label>
                         <div class="input-group">
-                            <select id="equipoFacturaIdMarca" name="idMarca" class="form-control" onchange="cargarModelosFactura(this.value)">
+                            <select id="equipoFacturaIdMarca" name="idMarca" class="form-control" required onchange="cargarModelosFactura(this.value)">
                                 <option value="">— Seleccionar marca —</option>
                                 @foreach(\App\Models\Marca::activos()->orderBy('marca')->get() as $marca)
                                     <option value="{{ $marca->idMarca }}">{{ $marca->marca }}</option>
@@ -378,16 +377,13 @@
                             </select>
                             <input type="text" id="buscarEquipoFacturaMarca" class="form-control mt-1" placeholder="Buscar marca..." style="display:none;">
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Marca')" title="Crear nueva marca">
-                                    +
-                                </button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Marca')" title="Crear nueva marca">+</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-grupo">
                         <label for="equipoFacturaIdModelo">Modelo *</label>
-                        <!-- <input type="text" id="buscarEquipoFacturaModelo" class="form-control" placeholder="Buscar modelo..."> -->
                         <div class="input-group">
                             <select id="equipoFacturaIdModelo" name="idModelo" required class="form-control">
                                 <option value="">— Seleccionar modelo —</option>
@@ -396,30 +392,24 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Modelo')" title="Crear nuevo modelo">
-                                    +
-                                </button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Modelo')" title="Crear nuevo modelo">+</button>
                             </div>
                         </div>
-                   
                     </div>
-                </div>
 
-                <div class="modal-equipo-row modal-equipo-row-3">
                     <div class="form-grupo">
                         <label for="equipoFacturaSerie">Serie *</label>
-                        <input type="text" id="equipoFacturaSerie" name="serie" required autocomplete="off">
+                        <input type="text" id="equipoFacturaSerie" name="serie" required autocomplete="off" class="form-control">
                         <small id="equipoFacturaSerieError" class="texto-error" style="display:none; color:#d9534f; margin-top:4px;">Número de serie incorrecto o ya existente</small>
                     </div>
 
-                    <div class="form-grupo">
-                        <label for="equipoFacturaGarantiaDias">Garantía</label>
-                        <div class="input-group" style="align-items:center;">
-                            <span style="padding:0 8px; color:#555; font-size:13px;">Garantía de</span>
-                            <input type="number" id="equipoFacturaGarantiaDias" min="0" max="999" step="1" value="0" class="form-control" style="max-width:100px;" placeholder="días">
-                            <span style="padding:0 8px; color:#555; font-size:13px;">días</span>
+                    <div class="form-grupo form-grupo-garantia">
+                        <div class="garantia-linea">
+                            <span class="garantia-texto">Garantía de</span>
+                            <input type="number" id="equipoFacturaGarantiaDias" min="0" max="999" step="1" value="0" class="form-control garantia-dias-input" placeholder="0" aria-label="Garantía en días">
+                            <span class="garantia-texto">días</span>
+                            <span id="equipoFacturaGarantiaPreview" class="garantia-preview">(vence: —)</span>
                         </div>
-                        <small id="equipoFacturaGarantiaPreview" style="display:block; margin-top:6px; color:#555;">(vence: —)</small>
                         <input type="hidden" id="equipoFacturaGarantiaBase" value="">
                         <input type="hidden" id="equipoFacturaVtoGarantia" name="vtoGarantia" value="">
                     </div>
@@ -428,9 +418,7 @@
                         <label for="equipoFacturaPrecio">Precio</label>
                         <input type="number" step="0.01" id="equipoFacturaPrecio" name="precio" class="form-control" placeholder="0.00">
                     </div>
-                </div>
 
-                <div class="modal-equipo-row modal-equipo-row-1">
                     <div class="form-grupo form-grupo-check">
                         <input type="hidden" name="informa_al_seguro" value="0">
                         <label class="form-check-label" for="equipoFacturaInformaSeguro">
@@ -438,12 +426,9 @@
                             Informa al seguro
                         </label>
                     </div>
-                </div>
 
-                <div class="modal-equipo-row modal-equipo-row-2">
                     <div class="form-grupo">
                         <label for="equipoFacturaUbicacionId">Ubicación *</label>
-                        <!-- <input type="text" id="buscarEquipoFacturaUbicacion" class="form-control" placeholder="Buscar ubicación..."> -->
                         <div class="input-group">
                             <select id="equipoFacturaUbicacionId" name="ubicacion_id" required class="form-control" onchange="cargarSectoresFacturaPorUbicacionYSeleccionar(this.value, null)">
                                 <option value="">— Seleccionar ubicación —</option>
@@ -452,17 +437,13 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Ubicacion')" title="Crear nueva ubicación">
-                                    +
-                                </button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Ubicacion')" title="Crear nueva ubicación">+</button>
                             </div>
                         </div>
-                   
                     </div>
 
                     <div class="form-grupo">
                         <label for="equipoFacturaSectorId">Sector *</label>
-                        <!-- <input type="text" id="buscarEquipoFacturaSector" class="form-control" placeholder="Buscar sector..."> -->
                         <div class="input-group">
                             <select id="equipoFacturaSectorId" name="sector_id" required class="form-control">
                                 <option value="">— Seleccionar sector —</option>
@@ -471,33 +452,63 @@
                                 @endforeach
                             </select>
                             <div class="input-group-append">
-                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Sector')" title="Crear nuevo sector">
-                                    +
-                                </button>
+                                <button type="button" class="btn btn-agregar-entidad" onclick="debugClick('Sector')" title="Crear nuevo sector">+</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="modal-equipo-row modal-equipo-row-1">
-                    <div class="form-grupo">
-                        <label for="equipoFacturaIdProveedor">Proveedor (auto factura)</label>
-                        <select id="equipoFacturaIdProveedor" class="form-control" disabled required>
+                    <div class="form-grupo" hidden aria-hidden="true">
+                        <label for="equipoFacturaIdProveedor">Proveedor (factura)</label>
+                        <select id="equipoFacturaIdProveedor" class="form-control" tabindex="-1" aria-hidden="true">
                             <option value="">— Sin especificar —</option>
                             @foreach(\App\Models\Proveedor::activos()->orderBy('proveedor')->get() as $p)
                                 <option value="{{ $p->idProveedor }}">{{ $p->proveedor }}</option>
                             @endforeach
                         </select>
-                        <input type="hidden" id="equipoFacturaIdProveedorHidden" name="idProveedor" value="">
                     </div>
                 </div>
 
-                <div class="modal-equipo-row modal-equipo-row-1">
-                    <div class="form-grupo full-width">
+                <aside class="modal-equipo-col modal-equipo-col-side">
+                    <div class="form-grupo">
                         <label for="equipoFacturaObservacion">Observación</label>
-                        <textarea id="equipoFacturaObservacion" name="observacion" rows="2" class="form-control"></textarea>
+                        <textarea id="equipoFacturaObservacion" name="observacion" rows="5" class="form-control"></textarea>
                     </div>
-                </div>
+
+                    <div class="form-grupo form-grupo-imagen">
+                        <label for="equipoFacturaImagen">Imagen del equipo</label>
+                        <input type="file" id="equipoFacturaImagen" name="imagen" accept="image/*" class="form-control-file-input">
+                        <div class="preview-imagen preview-imagen--modal" id="previewImagenFactura">
+                            <div class="preview-imagen-container">
+                                <img id="previewImgTagFactura" src="">
+                                <button type="button" id="btnEliminarImagenFactura" class="btn-eliminar-imagen" style="display: none;" title="Eliminar imagen">&times;</button>
+                            </div>
+                            <div class="placeholder" id="previewPlaceholderFactura">Tocá para elegir imagen</div>
+                        </div>
+                        <small class="form-grupo-imagen-hint">Formatos: JPG, PNG, GIF. Máx. 2&nbsp;MB</small>
+                    </div>
+
+                    <div id="equipoFacturaPanelFactura" class="equipo-panel-factura equipo-panel-factura--desde-factura">
+                        <h3 class="equipo-panel-factura-titulo">Datos de la factura de compra</h3>
+                        <dl class="equipo-panel-factura-dl">
+                            <div class="equipo-panel-factura-fila">
+                                <dt>Fecha</dt>
+                                <dd id="equipoFacturaPanelFecha">—</dd>
+                            </div>
+                            <div class="equipo-panel-factura-fila">
+                                <dt>Proveedor</dt>
+                                <dd id="equipoFacturaPanelProveedor">—</dd>
+                            </div>
+                            <div class="equipo-panel-factura-fila">
+                                <dt>N° factura</dt>
+                                <dd id="equipoFacturaPanelNumero">—</dd>
+                            </div>
+                            <div class="equipo-panel-factura-fila">
+                                <dt>Precio</dt>
+                                <dd id="equipoFacturaPanelPrecio">—</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </aside>
             </div>
 
             <div class="modal-equipo-footer">
