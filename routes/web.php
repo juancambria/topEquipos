@@ -14,6 +14,7 @@ use App\Http\Controllers\ModeloController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\FacturaController;
+use App\Http\Controllers\GestionEquipoSectorController;
 
 /*
 |--------------------------------------------------------------------------
@@ -142,6 +143,22 @@ Route::prefix('sectores')->group(function () {
     Route::post('/{id}/alta', [SectorController::class, 'alta'])->name('sectores.alta');
     Route::get('/{id}/ubicaciones', [SectorController::class, 'ubicacionesParaSector'])->name('sectores.ubicaciones');
     Route::post('/{id}/sync-ubicaciones', [SectorController::class, 'syncUbicaciones'])->name('sectores.syncUbicaciones');
+});
+
+/*
+|--------------------------------------------------------------------------
+| GESTION EQUIPOS POR SECTOR
+|--------------------------------------------------------------------------
+*/
+Route::prefix('lugares/equipos-sector')->name('lugares.equiposSector.')->group(function () {
+    Route::get('/', [GestionEquipoSectorController::class, 'index'])->name('index');
+    Route::get('/ubicaciones/{ubicacionId}/sectores', [GestionEquipoSectorController::class, 'sectoresPorUbicacion'])
+        ->name('sectores');
+    Route::get('/ubicaciones/{ubicacionId}/sectores/{sectorId}/tipos', [GestionEquipoSectorController::class, 'tiposPorSector'])
+        ->name('tipos');
+    Route::post('/asignar', [GestionEquipoSectorController::class, 'asignarTipo'])->name('asignar');
+    Route::post('/quitar', [GestionEquipoSectorController::class, 'quitarTipo'])->name('quitar');
+    Route::post('/cantidad', [GestionEquipoSectorController::class, 'actualizarCantidad'])->name('cantidad');
 });
 
 /*

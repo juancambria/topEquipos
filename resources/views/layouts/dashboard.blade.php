@@ -51,6 +51,7 @@
                             <div class="app-menu-panel" id="menu-lugares">
                                 <a href="{{ route('ubicaciones.index') }}">Ubicaciones</a>
                                 <a href="{{ route('sectores.index') }}">Sectores</a>
+                                <a href="{{ route('lugares.equiposSector.index') }}">Gestión de Equipos por Sector</a>
                             </div>
                         </div>
 

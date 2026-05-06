@@ -1,0 +1,172 @@
+.pagina-gestion-equipos-sector {
+    max-width: 100%;
+}
+
+.gestion-equipos-sector-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.gestion-equipos-sector-header h1 {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+.gestion-equipos-sector-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f8f8;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.ges-layout {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.95fr) minmax(240px, 1.05fr) 58px minmax(220px, 0.95fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.ges-columna h2,
+.ges-subcolumna h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
+.ges-subcolumna + .ges-subcolumna {
+    margin-top: 12px;
+}
+
+.ges-tabla-wrap {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    overflow: auto;
+    max-height: 450px;
+}
+
+.ges-tabla {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ges-tabla th,
+.ges-tabla td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.ges-tabla th {
+    background: #f0f0f0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #555;
+}
+
+.ges-tabla th.ges-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.ges-tabla th.ges-sortable:hover {
+    background: #e6e6e6;
+}
+
+.ges-sort-icon {
+    margin-left: 4px;
+    font-size: 11px;
+    color: #666;
+}
+
+.ges-tabla tbody tr {
+    cursor: pointer;
+}
+
+.ges-tabla tbody tr:hover {
+    background: #fafafa;
+}
+
+.ges-tabla tbody tr.seleccionado {
+    background: #c0c0c0;
+    font-weight: 600;
+}
+
+.ges-oculto {
+    display: none;
+}
+
+.ges-centro-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.ges-centro-header h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.ges-btn-volver {
+    min-width: 96px;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ges-controles {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+}
+
+.ges-controles-columna {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+}
+
+.ges-btn-flecha {
+    width: 44px;
+    height: 36px;
+    min-width: 44px;
+    min-height: 36px;
+    padding: 0;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ges-cantidad-input {
+    width: 64px;
+    max-width: 64px;
+    min-width: 64px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: right;
+}
+
+#tablaGesTiposAsignados th:nth-child(3),
+#tablaGesTiposAsignados td:nth-child(3) {
+    width: 86px;
+    min-width: 86px;
+    max-width: 86px;
+}
