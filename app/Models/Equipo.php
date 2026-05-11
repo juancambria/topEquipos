@@ -68,6 +68,11 @@ class Equipo extends Model
         return $this->hasMany(Historial::class, 'equipo_id', 'id');
     }
 
+    public function atributoValores()
+    {
+        return $this->hasMany(EquipoAtributoValor::class, 'equipo_id', 'id');
+    }
+
     public function scopeActivos($query)
     {
         return $query->where('estado', 'activo');

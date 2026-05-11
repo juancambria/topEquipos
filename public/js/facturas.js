@@ -142,6 +142,250 @@
     if (elN) elN.textContent = num || '—';
   }
 
+  function parseJsonObjectSafe(raw) {
+    if (!raw) return {};
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_e) {
+      return {};
+    }
+  }
+
+  function getRutaAtributosTipoFactura(idTipo) {
+    const modal = document.getElementById('modalEquipoFactura');
+    const template = modal?.dataset?.routeAtributosTipo || '/equipos/tipos/__ID__/atributos';
+    return String(template).replace('__ID__', String(idTipo));
+  }
+
+  function abrirGestionAtributosDesdeFactura() {
+    const tipo = document.getElementById('equipoFacturaIdTipo');
+    if (!tipo?.value) {
+      toast('Seleccioná primero un tipo para crear atributos', 'warning');
+      return;
+    }
+    window.abrirModalAtributoEquipoFactura();
+  }
+
+  function getRutaCrearAtributoFactura(idTipo) {
+    const modal = document.getElementById('modalEquipoFactura');
+    const template = modal?.dataset?.routeCrearAtributoTipo || '/atributos-tipos-equipos/tipos/__TIPO__/atributos/crear';
+    return String(template).replace('__TIPO__', String(idTipo));
+  }
+
+  function getRutaCrearOpcionFactura(idTipo, idAtributo) {
+    const modal = document.getElementById('modalEquipoFactura');
+    const template = modal?.dataset?.routeCrearOpcionAtributo || '/atributos-tipos-equipos/tipos/__TIPO__/atributos/__ATTR__/opciones/crear';
+    return String(template)
+      .replace('__TIPO__', String(idTipo))
+      .replace('__ATTR__', String(idAtributo));
+  }
+
+  function cerrarModalAuxFactura(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.classList.add('modal-oculto');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+
+    const modalEquipoFactura = document.getElementById('modalEquipoFactura');
+    if (window.__overlayEquipoFacturaOculto && modalEquipoFactura) {
+      modalEquipoFactura.style.display = 'flex';
+      modalEquipoFactura.classList.add('show');
+      modalEquipoFactura.classList.remove('modal-oculto');
+      modalEquipoFactura.setAttribute('aria-hidden', 'false');
+      window.__overlayEquipoFacturaOculto = false;
+    }
+  }
+
+  function bindStrictTabTrapFactura(modal) {
+    if (!modal || modal.dataset.strictTrapBound === '1') return;
+    modal.dataset.strictTrapBound = '1';
+    modal.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const focusables = Array.from(modal.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter((el) => {
+        const st = window.getComputedStyle(el);
+        return st.display !== 'none' && st.visibility !== 'hidden' && el.getClientRects().length > 0;
+      });
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+        return;
+      }
+      if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }, true);
+  }
+
+  window.cerrarModalAtributoEquipoFactura = function() {
+    const form = document.getElementById('formAtributoEquipoFactura');
+    if (form) form.reset();
+    cerrarModalAuxFactura('modalAtributoEquipoFactura');
+  };
+
+  window.cerrarModalOpcionAtributoEquipoFactura = function() {
+    const form = document.getElementById('formOpcionAtributoEquipoFactura');
+    if (form) form.reset();
+    cerrarModalAuxFactura('modalOpcionAtributoEquipoFactura');
+  };
+
+  window.abrirModalAtributoEquipoFactura = function() {
+    const modal = document.getElementById('modalAtributoEquipoFactura');
+    const input = document.getElementById('equipoFacturaNuevoAtributoNombre');
+    if (!modal) return;
+    window.__overlayEquipoFacturaOculto = false;
+
+    modal.classList.add('show');
+    modal.classList.remove('modal-oculto');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '130000';
+    modal.setAttribute('aria-hidden', 'false');
+    if (input) input.value = '';
+    if (typeof window.__refocusModal === 'function') {
+      window.__refocusModal(modal);
+    }
+    if (typeof window.__scheduleModalFooterAccents === 'function') {
+      window.__scheduleModalFooterAccents();
+    }
+    if (input) {
+      setTimeout(() => {
+        input.focus();
+        input.select();
+      }, 10);
+    }
+  };
+
+  window.abrirModalOpcionAtributoEquipoFactura = function(idAtributo, nombreAtributo) {
+    const modal = document.getElementById('modalOpcionAtributoEquipoFactura');
+    const inputId = document.getElementById('equipoFacturaOpcionAtributoId');
+    const inputNombre = document.getElementById('equipoFacturaOpcionAtributoNombre');
+    const inputValor = document.getElementById('equipoFacturaNuevaOpcionAtributoValor');
+    if (!modal) return;
+    window.__overlayEquipoFacturaOculto = false;
+
+    if (inputId) inputId.value = String(idAtributo || '');
+    if (inputNombre) inputNombre.value = String(nombreAtributo || '');
+    if (inputValor) inputValor.value = '';
+    modal.classList.add('show');
+    modal.classList.remove('modal-oculto');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '130000';
+    modal.setAttribute('aria-hidden', 'false');
+    if (typeof window.__refocusModal === 'function') {
+      window.__refocusModal(modal);
+    }
+    if (typeof window.__scheduleModalFooterAccents === 'function') {
+      window.__scheduleModalFooterAccents();
+    }
+  };
+
+  function snapshotAtributosEquipoFactura() {
+    const container = document.getElementById('equipoFacturaAtributosContainer');
+    if (!container) return {};
+    const out = {};
+    container.querySelectorAll('select[data-atributo-id]').forEach((sel) => {
+      const id = String(sel.dataset.atributoId || '').trim();
+      const val = String(sel.value || '').trim();
+      if (id && val) out[id] = val;
+    });
+    return out;
+  }
+
+  function renderAtributosEquipoFactura(atributos, valoresIniciales) {
+    const block = document.getElementById('equipoFacturaAtributosBlock');
+    const container = document.getElementById('equipoFacturaAtributosContainer');
+    if (!block || !container) return;
+
+    const list = Array.isArray(atributos) ? atributos : [];
+    const tipoActual = String(document.getElementById('equipoFacturaIdTipo')?.value || '').trim();
+    if (!list.length) {
+      block.hidden = !tipoActual;
+      container.innerHTML = '';
+      return;
+    }
+
+    block.hidden = false;
+    container.innerHTML = '';
+    const valores = valoresIniciales && typeof valoresIniciales === 'object' ? valoresIniciales : {};
+
+    list.forEach((attr) => {
+      const row = document.createElement('div');
+      row.className = 'equipo-atributo-item';
+
+      const label = document.createElement('div');
+      label.className = 'equipo-atributo-label';
+      label.textContent = String(attr.nombre || ('Atributo #' + attr.idAtributo));
+
+      const btnOpcion = document.createElement('button');
+      btnOpcion.type = 'button';
+      btnOpcion.className = 'btn btn-agregar-entidad equipo-atributo-add-opcion';
+      btnOpcion.textContent = '+';
+      btnOpcion.title = 'Crear opción para este atributo';
+      btnOpcion.addEventListener('click', () => {
+        window.abrirModalOpcionAtributoEquipoFactura(attr.idAtributo, attr.nombre || ('Atributo #' + attr.idAtributo));
+      });
+
+      const select = document.createElement('select');
+      select.className = 'form-control';
+      select.name = 'atributo_valores[' + String(attr.idAtributo) + ']';
+      select.dataset.atributoId = String(attr.idAtributo);
+
+      const empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = '— Seleccionar opción —';
+      select.appendChild(empty);
+
+      const opciones = Array.isArray(attr.opciones) ? attr.opciones : [];
+      opciones.forEach((op) => {
+        const option = document.createElement('option');
+        option.value = String(op);
+        option.textContent = String(op);
+        select.appendChild(option);
+      });
+
+      const preset = valores[String(attr.idAtributo)] || '';
+      if (preset) select.value = String(preset);
+
+      const controlRow = document.createElement('div');
+      controlRow.className = 'equipo-atributo-control-row';
+      controlRow.appendChild(select);
+      controlRow.appendChild(btnOpcion);
+
+      row.appendChild(label);
+      row.appendChild(controlRow);
+      container.appendChild(row);
+    });
+  }
+
+  function cargarAtributosFacturaPorTipo(idTipo, valoresIniciales = {}) {
+    if (!idTipo) {
+      renderAtributosEquipoFactura([], {});
+      return Promise.resolve();
+    }
+    return fetch(getRutaAtributosTipoFactura(idTipo), {
+      headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest' }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data || !data.success) {
+          renderAtributosEquipoFactura([], {});
+          return;
+        }
+        renderAtributosEquipoFactura(data.atributos || [], valoresIniciales || {});
+      })
+      .catch(() => {
+        renderAtributosEquipoFactura([], {});
+      });
+  }
+
   function resetImagenEquipoFactura() {
     const input = document.getElementById('equipoFacturaImagen');
     const preview = document.getElementById('previewImagenFactura');
@@ -2346,6 +2590,10 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
   }
 
   function debugClick(tipo) {
+    if (String(tipo || '').toLowerCase() === 'atributo') {
+      abrirGestionAtributosDesdeFactura();
+      return;
+    }
     const modalEquipoFactura = document.getElementById('modalEquipoFactura');
     if (modalEquipoFactura?.classList.contains('show')) {
       modalEquipoFactura.style.display = 'none';
@@ -2479,9 +2727,11 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
           cargarModelosPorMarcaYTipoYSeleccionar(d.idMarca, d.idTipo, d.idModelo || null);
         }
       });
+      cargarAtributosFacturaPorTipo(d.idTipo, d.atributosValores || {});
     } else {
       set('equipoFacturaIdMarca', d.idMarca);
       if (d.idMarca) cargarModelosFacturaPorMarcaYSeleccionar(d.idMarca, d.idModelo || null);
+      cargarAtributosFacturaPorTipo('', {});
     }
     set('equipoFacturaUbicacionId', d.ubicacion_id);
     if (d.ubicacion_id) cargarSectoresPorUbicacionYSeleccionar(d.ubicacion_id, d.sector_id || null);
@@ -2528,6 +2778,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     set('equipoFacturaPrecio', precioPorEquipo > 0 ? precioPorEquipo.toFixed(2) : '');
     set('equipoFacturaIdTipo', '');
     cargarMarcasFacturaPorTipoYSeleccionar('', null);
+    cargarAtributosFacturaPorTipo('', {});
     const selectModelo = document.getElementById('equipoFacturaIdModelo');
     if (selectModelo) {
       selectModelo.innerHTML = '<option value="">— Seleccionar modelo —</option>';
@@ -2820,6 +3071,9 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       const tipoCreado = tipoSelect?.options?.[tipoSelect.selectedIndex]?.text?.trim() || '-';
       const formData = new FormData(form);
       formData.set('idDetalleFactura', equipoActual?.idDetalle || formData.get('idDetalleFactura') || '');
+      Object.entries(snapshotAtributosEquipoFactura()).forEach(([idAtributo, valor]) => {
+        formData.set(`atributo_valores[${idAtributo}]`, valor);
+      });
 
       state.datosEquipoAnterior = {
         idDetalle: equipoActual?.idDetalle || null,
@@ -2833,6 +3087,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
         precio: document.getElementById('equipoFacturaPrecio')?.value || '',
         observacion: document.getElementById('equipoFacturaObservacion')?.value || '',
         informaSeguro: document.getElementById('equipoFacturaInformaSeguro')?.checked || false,
+        atributosValores: snapshotAtributosEquipoFactura(),
       };
 
       fetch(obtenerRutaEquiposCrear(), {
@@ -2992,6 +3247,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
         const modeloSelect = document.getElementById('equipoFacturaIdModelo');
         if (modeloSelect) modeloSelect.innerHTML = '<option value="">— Seleccionar modelo —</option>';
         cargarMarcasFacturaPorTipoYSeleccionar(selectTipo.value || '', null, () => {});
+        cargarAtributosFacturaPorTipo(selectTipo.value || '', {});
       });
     }
 
@@ -3001,6 +3257,126 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
         const modeloSelect = document.getElementById('equipoFacturaIdModelo');
         if (modeloSelect) modeloSelect.innerHTML = '<option value="">— Seleccionar modelo —</option>';
         cargarModelosFacturaPorMarcaYSeleccionar(selectMarca.value || '', null);
+      });
+    }
+
+    const btnGestor = document.getElementById('btnAbrirGestorAtributosEquipoFactura');
+    if (btnGestor && btnGestor.dataset.facturaBound !== '1') {
+      btnGestor.dataset.facturaBound = '1';
+      btnGestor.addEventListener('click', abrirGestionAtributosDesdeFactura);
+    }
+
+    const modalCrearAtributo = document.getElementById('modalAtributoEquipoFactura');
+    if (modalCrearAtributo && modalCrearAtributo.dataset.bound !== '1') {
+      modalCrearAtributo.dataset.bound = '1';
+      bindStrictTabTrapFactura(modalCrearAtributo);
+      modalCrearAtributo.addEventListener('click', (e) => {
+        if (e.target === modalCrearAtributo) {
+          window.cerrarModalAtributoEquipoFactura();
+        }
+      });
+    }
+
+    const modalCrearOpcion = document.getElementById('modalOpcionAtributoEquipoFactura');
+    if (modalCrearOpcion && modalCrearOpcion.dataset.bound !== '1') {
+      modalCrearOpcion.dataset.bound = '1';
+      modalCrearOpcion.addEventListener('click', (e) => {
+        if (e.target === modalCrearOpcion) {
+          window.cerrarModalOpcionAtributoEquipoFactura();
+        }
+      });
+    }
+
+    const formAtributo = document.getElementById('formAtributoEquipoFactura');
+    if (formAtributo && formAtributo.dataset.bound !== '1') {
+      formAtributo.dataset.bound = '1';
+      formAtributo.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tipoSel = document.getElementById('equipoFacturaIdTipo');
+        const input = document.getElementById('equipoFacturaNuevoAtributoNombre');
+        const idTipo = String(tipoSel?.value || '').trim();
+        const nombre = String(input?.value || '').slice(0, 30).trim();
+        if (!idTipo) {
+          toast('Seleccioná un tipo antes de crear atributos', 'warning');
+          return;
+        }
+        if (!nombre) {
+          toast('Ingresá un nombre de atributo', 'warning');
+          return;
+        }
+
+        try {
+          const response = await fetch(getRutaCrearAtributoFactura(idTipo), {
+            method: 'POST',
+            headers: CrudCommon.jsonHeaders({
+              'X-Requested-With': 'XMLHttpRequest',
+              'Content-Type': 'application/json',
+            }),
+            body: JSON.stringify({ nombre }),
+          });
+          const data = await response.json();
+          if (!data?.success) {
+            const errorNombre = Array.isArray(data?.errors?.nombre) ? data.errors.nombre[0] : '';
+            toast(errorNombre || data?.message || 'No se pudo crear el atributo', 'error');
+            return;
+          }
+          toast(data?.message || 'Atributo creado correctamente', 'success');
+          window.cerrarModalAtributoEquipoFactura();
+          if (tipoSel?.value) {
+            await cargarAtributosFacturaPorTipo(tipoSel.value, snapshotAtributosEquipoFactura());
+          }
+        } catch (_error) {
+          toast('Error al crear el atributo', 'error');
+        }
+      });
+    }
+
+    const formOpcion = document.getElementById('formOpcionAtributoEquipoFactura');
+    if (formOpcion && formOpcion.dataset.bound !== '1') {
+      formOpcion.dataset.bound = '1';
+      formOpcion.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tipoSel = document.getElementById('equipoFacturaIdTipo');
+        const inputIdAtributo = document.getElementById('equipoFacturaOpcionAtributoId');
+        const inputValor = document.getElementById('equipoFacturaNuevaOpcionAtributoValor');
+        const idTipo = String(tipoSel?.value || '').trim();
+        const idAtributo = String(inputIdAtributo?.value || '').trim();
+        const valor = String(inputValor?.value || '').slice(0, 30).trim();
+
+        if (!idTipo || !idAtributo) {
+          toast('No se pudo identificar el atributo seleccionado', 'error');
+          return;
+        }
+        if (!valor) {
+          toast('Ingresá una opción válida', 'warning');
+          return;
+        }
+
+        try {
+          const response = await fetch(getRutaCrearOpcionFactura(idTipo, idAtributo), {
+            method: 'POST',
+            headers: CrudCommon.jsonHeaders({
+              'X-Requested-With': 'XMLHttpRequest',
+              'Content-Type': 'application/json',
+            }),
+            body: JSON.stringify({ valor }),
+          });
+          const data = await response.json();
+          if (!data?.success) {
+            const errorValor = Array.isArray(data?.errors?.valor) ? data.errors.valor[0] : '';
+            toast(errorValor || data?.message || 'No se pudo crear la opción', 'error');
+            return;
+          }
+          toast(data?.message || 'Opción creada correctamente', 'success');
+          window.cerrarModalOpcionAtributoEquipoFactura();
+          const snapshot = snapshotAtributosEquipoFactura();
+          snapshot[String(idAtributo)] = valor;
+          if (tipoSel?.value) {
+            await cargarAtributosFacturaPorTipo(tipoSel.value, snapshot);
+          }
+        } catch (_error) {
+          toast('Error al crear la opción', 'error');
+        }
       });
     }
   }

@@ -1017,18 +1017,23 @@
 #modalEquipoFactura[aria-hidden="false"] {
     display: flex !important;
     align-items: flex-start;
-    padding-top: 10px;
-    padding-bottom: 0;
+    padding-top: 4px;
+    padding-bottom: 2px;
 }
 
 #modalEquipo .modal-equipo,
 #modalEquipoFactura .modal-equipo {
-    max-width: 1120px;
+    max-width: 1260px;
     width: 95%;
     border-radius: 14px;
     box-shadow: 0 18px 45px rgba(0,0,0,0.25);
     margin: 0 auto;
-    max-height: calc(100vh - 10px);
+    height: calc(100vh - 12px);
+    max-height: calc(100vh - 12px);
+    min-height: calc(100vh - 12px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 #modalEquipo .modal-equipo-header,
@@ -1056,21 +1061,28 @@
 
 #modalEquipo .modal-equipo-body,
 #modalEquipoFactura .modal-equipo-body {
-    padding: 12px 16px;
-    max-height: calc(100vh - 92px);
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
 }
 
 #modalEquipo .modal-equipo-layout,
 #modalEquipoFactura .modal-equipo-layout {
     display: grid;
-    grid-template-columns: minmax(400px, 460px) minmax(0, 1fr);
-    gap: 8px;
-    align-items: start;
+    grid-template-columns: minmax(390px, 440px) minmax(0, 1fr);
+    gap: 6px;
+    align-items: stretch;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 #modalEquipo .modal-equipo-col-main .form-grupo,
 #modalEquipoFactura .modal-equipo-col-main .form-grupo {
-    margin-bottom: 12px;
+    margin-bottom: 9px;
 }
 
 #modalEquipo .modal-equipo-col-main .form-grupo .input-group:has(select.form-control),
@@ -1102,6 +1114,146 @@
 #modalEquipoFactura .modal-equipo-col-side {
     border-left: 1px solid #e2e8f0;
     padding-left: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+    grid-template-areas:
+        "obs attr"
+        "det attr"
+        "fac attr";
+    gap: 6px;
+    align-content: start;
+    align-items: start;
+}
+
+#modalEquipo .modal-equipo-col-side > .form-grupo:first-child,
+#modalEquipoFactura .modal-equipo-col-side > .form-grupo:first-child {
+    grid-area: obs;
+    margin-bottom: 0;
+    margin-top: 0;
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#modalEquipo .modal-equipo-col-side .form-grupo,
+#modalEquipoFactura .modal-equipo-col-side .form-grupo {
+    margin-bottom: 0;
+}
+
+#modalEquipo #equipoAtributosBlock,
+#modalEquipoFactura #equipoFacturaAtributosBlock {
+    grid-area: attr;
+    margin-bottom: 0;
+}
+
+#modalEquipo .equipo-atributos-header,
+#modalEquipoFactura .equipo-atributos-header {
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+#modalEquipo .equipo-atributos-header .btn-agregar-entidad,
+#modalEquipoFactura .equipo-atributos-header .btn-agregar-entidad {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    margin-left: auto;
+    padding: 0;
+}
+
+#modalEquipo .btn-atributos-gestor,
+#modalEquipoFactura .btn-atributos-gestor {
+    font-size: 18px;
+    line-height: 1;
+}
+
+#modalEquipo .equipo-atributo-label,
+#modalEquipoFactura .equipo-atributo-label {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+#modalEquipo .equipo-atributo-control-row,
+#modalEquipoFactura .equipo-atributo-control-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#modalEquipo .equipo-atributo-control-row select,
+#modalEquipoFactura .equipo-atributo-control-row select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#modalEquipo .equipo-atributo-add-opcion,
+#modalEquipoFactura .equipo-atributo-add-opcion {
+    width: 22px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0;
+    line-height: 1;
+    font-size: 14px;
+}
+
+#modalEquipo .equipo-atributos-container,
+#modalEquipoFactura .equipo-atributos-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: none;
+    overflow: visible;
+}
+
+#modalEquipo .equipo-atributo-item,
+#modalEquipoFactura .equipo-atributo-item {
+    border: 1px solid #dbe3ea;
+    border-radius: 8px;
+    background: #f8fafc;
+    padding: 5px 7px;
+}
+
+#modalEquipo .equipo-atributo-item select,
+#modalEquipoFactura .equipo-atributo-item select {
+    min-height: 28px;
+    padding: 3px 7px;
+}
+
+#modalEquipo .modal-equipo-col-side .form-grupo-imagen,
+#modalEquipoFactura .modal-equipo-col-side .form-grupo-imagen {
+    grid-area: det;
+    margin-bottom: 0;
+    padding: 9px 10px;
+    min-height: 264px;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+#modalEquipo #equipoPanelFactura,
+#modalEquipoFactura #equipoFacturaPanelFactura {
+    grid-area: fac;
+    margin-top: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: visible;
+}
+
+#modalEquipo #equipoObservacion,
+#modalEquipoFactura #equipoFacturaObservacion {
+    width: 100%;
+    display: block;
+    box-sizing: border-box;
+    height: 126px;
+    min-height: 126px;
+    max-height: 126px;
+    resize: none;
 }
 
 #modalEquipo .form-grupo-imagen,
@@ -1122,9 +1274,9 @@
 #modalEquipoFactura .preview-imagen--modal {
     max-width: 100%;
     width: 100%;
-    min-height: 180px;
-    max-height: 260px;
-    margin-top: 8px;
+    min-height: 186px;
+    max-height: 186px;
+    margin-top: 6px;
     border-radius: 10px;
     border: 2px dashed #ccc;
     background: #fafafa;
@@ -1169,8 +1321,8 @@
 }
 
 .equipo-panel-factura {
-    margin-top: 4px;
-    padding: 14px 16px;
+    margin-top: 2px;
+    padding: 18px 20px 16px;
     border: 1px solid #dbe3ea;
     border-radius: 12px;
     background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
@@ -1182,8 +1334,8 @@
 }
 
 .equipo-panel-factura-titulo {
-    margin: 0 0 12px;
-    font-size: 0.92rem;
+    margin: 0 0 7px;
+    font-size: 0.94rem;
     font-weight: 700;
     color: #334155;
     letter-spacing: 0.02em;
@@ -1191,15 +1343,18 @@
 
 .equipo-panel-factura-dl {
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .equipo-panel-factura-fila {
     display: grid;
-    grid-template-columns: 108px minmax(0, 1fr);
-    gap: 10px 12px;
+    grid-template-columns: 94px minmax(0, 1fr);
+    gap: 4px 9px;
     align-items: baseline;
     font-size: 13px;
-    margin-bottom: 10px;
+    margin-bottom: 0;
 }
 
 .equipo-panel-factura-fila:last-child {
@@ -1223,6 +1378,16 @@
     #modalEquipo .modal-equipo-layout,
     #modalEquipoFactura .modal-equipo-layout {
         grid-template-columns: 1fr;
+    }
+
+    #modalEquipo .modal-equipo-col-side,
+    #modalEquipoFactura .modal-equipo-col-side {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "attr"
+            "det"
+            "fac"
+            "obs";
     }
 }
 
@@ -1291,9 +1456,13 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    padding: 14px 20px;
+    padding: 8px 16px;
     border-top: 1px solid #ececec;
     background: #fafbfc;
+    flex: 0 0 auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
 }
 
 /* Responsive para pantallas más pequeñas */

@@ -34,6 +34,11 @@ class Tipo extends Model
             ->withTimestamps();
     }
 
+    public function especificacionesAtributos()
+    {
+        return $this->hasMany(TipoAtributoEspecificacion::class, 'idTipo', 'idTipo');
+    }
+
     public function scopeActivos($query)
     {
         return $query->where('estado', 'activo');

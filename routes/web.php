@@ -15,6 +15,7 @@ use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\GestionEquipoSectorController;
+use App\Http\Controllers\AtributoTipoEquipoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,6 +87,23 @@ Route::prefix('tipos')->group(function () {
     Route::post('/{id}/actualizar', [TipoController::class, 'actualizar'])->name('tipos.actualizar');
     Route::post('/{id}/baja', [TipoController::class, 'baja'])->name('tipos.baja');
     Route::post('/{id}/alta', [TipoController::class, 'alta'])->name('tipos.alta');
+});
+
+/*
+|--------------------------------------------------------------------------
+| ATRIBUTOS DE TIPOS DE EQUIPOS
+|--------------------------------------------------------------------------
+*/
+Route::prefix('atributos-tipos-equipos')->group(function () {
+    Route::get('/', [AtributoTipoEquipoController::class, 'index'])->name('atributosTiposEquipos.index');
+    Route::post('/atributos/crear', [AtributoTipoEquipoController::class, 'crearAtributo'])->name('atributosTiposEquipos.atributos.crear');
+    Route::delete('/atributos/{idAtributo}', [AtributoTipoEquipoController::class, 'eliminarAtributo'])->name('atributosTiposEquipos.atributos.eliminar');
+    Route::post('/tipos/{idTipo}/atributos/crear', [AtributoTipoEquipoController::class, 'crearAtributoParaTipo'])->name('atributosTiposEquipos.tipos.atributos.crear');
+    Route::post('/tipos/{idTipo}/atributos/{idAtributo}/opciones/crear', [AtributoTipoEquipoController::class, 'crearOpcionParaTipoAtributo'])->name('atributosTiposEquipos.tipos.atributos.opciones.crear');
+    Route::post('/unidades-medida/crear', [AtributoTipoEquipoController::class, 'crearUnidadMedida'])->name('atributosTiposEquipos.unidadesMedida.crear');
+    Route::delete('/unidades-medida/{idUnidadMedida}', [AtributoTipoEquipoController::class, 'eliminarUnidadMedida'])->name('atributosTiposEquipos.unidadesMedida.eliminar');
+    Route::get('/tipos/{idTipo}/configuracion', [AtributoTipoEquipoController::class, 'configuracionesPorTipo'])->name('atributosTiposEquipos.tipos.configuracion');
+    Route::post('/tipos/{idTipo}/configuracion', [AtributoTipoEquipoController::class, 'guardarConfiguracionesTipo'])->name('atributosTiposEquipos.tipos.configuracion.guardar');
 });
 
 /*
@@ -185,6 +203,7 @@ Route::prefix('modelos')->group(function () {
 Route::prefix('equipos')->group(function () {
     Route::get('/', [EquipoController::class, 'index'])->name('equipos.index');
     Route::get('/inactivos', [EquipoController::class, 'inactivos'])->name('equipos.inactivos');
+    Route::get('/tipos/{idTipo}/atributos', [EquipoController::class, 'atributosPorTipo'])->name('equipos.atributosPorTipo');
     Route::get('/serie-existe', [EquipoController::class, 'serieExiste'])->name('equipos.serieExiste');
     Route::post('/crear', [EquipoController::class, 'crear'])->name('equipos.crear');
     Route::post('/eliminar-lote', [EquipoController::class, 'eliminarLote'])->name('equipos.eliminarLote');

@@ -40,6 +40,7 @@
                                 <a href="{{ route('tipos.index') }}">Tipos</a>
                                 <a href="{{ route('marcas.index') }}">Marcas</a>
                                 <a href="{{ route('modelos.index') }}">Modelos</a>
+                                <a href="{{ route('atributosTiposEquipos.index') }}">Atributos de Tipos de Equipos</a>
                                 <a href="{{ route('historial.index') }}">Historial</a>
                             </div>
                         </div>
@@ -171,6 +172,7 @@
 <script src="{{ asset('js/marcas.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/tipos.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modelos.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/atributos-tipos-equipos.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/proveedores.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/contactos.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/ubicaciones.js') }}?v={{ time() }}"></script>

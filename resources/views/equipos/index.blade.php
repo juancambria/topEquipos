@@ -139,6 +139,7 @@
                     data-factura-proveedor-id="{{ $e->factura_proveedor_id ?? '' }}"
                     data-factura-proveedor-nombre="{{ e($e->factura_proveedor_nombre ?? '') }}"
                     data-informa-seguro="{{ $e->informa_al_seguro ? 1 : 0 }}"
+                    data-atributos-valores='@json($e->atributoValores->mapWithKeys(fn($av) => [(string) $av->idAtributo => $av->valor])->toArray())'
                     data-imagen="{{ $e->imagen ?? '' }}">
                     <td>{{ $e->id }}</td>
                     <td>{{ $e->serie }}</td>
@@ -163,7 +164,7 @@
         @csrf
     </form>
 
-<div id="modalEquipo" class="modal-overlay" data-modal-focus="#equipoIdTipo" aria-hidden="true">
+<div id="modalEquipo" class="modal-overlay" data-modal-focus="#equipoIdTipo" aria-hidden="true" data-route-atributos-tipo="{{ route('equipos.atributosPorTipo', ['idTipo' => '__ID__']) }}" data-route-gestor-atributos="{{ route('atributosTiposEquipos.index') }}" data-route-crear-atributo-tipo="{{ route('atributosTiposEquipos.tipos.atributos.crear', ['idTipo' => '__TIPO__']) }}" data-route-crear-opcion-atributo="{{ route('atributosTiposEquipos.tipos.atributos.opciones.crear', ['idTipo' => '__TIPO__', 'idAtributo' => '__ATTR__']) }}">
     <div class="modal-equipo">
         <div class="modal-equipo-header">
             <h2 id="modalEquipoTitulo">Alta de Equipo</h2>
@@ -287,6 +288,14 @@
                         <textarea id="equipoObservacion" name="observacion" rows="5" class="form-control"></textarea>
                     </div>
 
+                    <div class="form-grupo" id="equipoAtributosBlock" hidden>
+                        <div class="equipo-atributos-header">
+                            <label>Atributos</label>
+                            <button type="button" class="btn btn-agregar-entidad btn-atributos-gestor" id="btnAbrirGestorAtributosEquipo" title="Crear atributo">+</button>
+                        </div>
+                        <div id="equipoAtributosContainer" class="equipo-atributos-container"></div>
+                    </div>
+
                     <div class="form-grupo form-grupo-imagen">
                         <label for="equipoImagen">Imagen del equipo</label>
                         <input type="file" id="equipoImagen" name="imagen" accept="image/*" class="form-control-file-input">
@@ -330,6 +339,49 @@
             <div class="modal-equipo-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalEquipo()">Cancelar</button>
                 <button type="submit" id="modalEquipoSubmit" class="btn btn-primario">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalAtributoEquipo" class="modal-overlay" aria-hidden="true" data-modal-focus="#equipoNuevoAtributoNombre">
+    <div class="modal-sector">
+        <div class="modal-sector-header">
+            <h2>Nuevo Atributo</h2>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalAtributoEquipo()" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formAtributoEquipo" class="modal-sector-body">
+            <div class="form-grupo">
+                <label for="equipoNuevoAtributoNombre">Nombre *</label>
+                <input type="text" id="equipoNuevoAtributoNombre" maxlength="30" required autocomplete="off" class="form-control">
+            </div>
+            <div class="modal-sector-footer">
+                <button type="button" class="btn btn-secundario" onclick="cerrarModalAtributoEquipo()"><span class="footer-acc-label"><span class="acc-k">C</span>ancelar</span></button>
+                <button type="submit" class="btn btn-primario"><span class="footer-acc-label">Crea<span class="acc-k">r</span></span></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalOpcionAtributoEquipo" class="modal-overlay" aria-hidden="true" data-modal-focus="#equipoNuevaOpcionAtributoValor">
+    <div class="modal-sector">
+        <div class="modal-sector-header">
+            <h2>Nueva Opción</h2>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalOpcionAtributoEquipo()" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formOpcionAtributoEquipo" class="modal-sector-body">
+            <input type="hidden" id="equipoOpcionAtributoId" value="">
+            <div class="form-grupo">
+                <label for="equipoOpcionAtributoNombre">Atributo</label>
+                <input type="text" id="equipoOpcionAtributoNombre" class="form-control" readonly>
+            </div>
+            <div class="form-grupo">
+                <label for="equipoNuevaOpcionAtributoValor">Opción *</label>
+                <input type="text" id="equipoNuevaOpcionAtributoValor" maxlength="30" required autocomplete="off" class="form-control">
+            </div>
+            <div class="modal-sector-footer">
+                <button type="button" class="btn btn-secundario" onclick="cerrarModalOpcionAtributoEquipo()">Cancelar</button>
+                <button type="submit" class="btn btn-primario">Crear</button>
             </div>
         </form>
     </div>

@@ -1,0 +1,358 @@
+.page-container.pagina-atributos-tipos-equipos {
+    max-width: 100%;
+    min-width: 0;
+    padding: 12px;
+}
+
+.atributos-tipos-header {
+    margin-bottom: 8px;
+}
+
+.atributos-tipos-header h1 {
+    margin: 0 0 6px 0;
+    font-size: 1.3rem;
+}
+
+.atributos-tipos-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: #f8f8f8;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.atributos-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 30%) minmax(260px, 30%) minmax(360px, 40%);
+    gap: 10px;
+    margin-top: 8px;
+    align-items: stretch;
+}
+
+.panel {
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    background: #fff;
+    padding: 8px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel h2,
+.panel h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.05rem;
+}
+
+.panel-help-text {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: #5b6675;
+}
+
+.especificacion-actual {
+    margin: 0 0 8px;
+    padding: 6px 8px;
+    border: 1px solid #d8e0ec;
+    border-radius: 6px;
+    background: #f8fbff;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #3d4b5f;
+}
+
+.panel-heading-inline {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.panel-actions-inline {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+}
+
+.panel-search-wrap {
+    margin-bottom: 6px;
+}
+
+.panel-search-input {
+    width: 100%;
+    height: 32px;
+    border: 1px solid #d2d8e1;
+    border-radius: 7px;
+    padding: 0 10px;
+    font-size: 13px;
+    outline: none;
+}
+
+.panel-search-input:focus {
+    border-color: #4f86d9;
+    box-shadow: 0 0 0 2px rgba(79, 134, 217, 0.2);
+}
+
+.btn-panel-action {
+    height: 34px;
+    min-width: 0;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    font-size: 13.5px;
+}
+
+.btn-panel-action .tool-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.lista-atributos {
+    max-height: calc(100vh - 265px);
+    overflow: auto;
+    padding-right: 4px;
+    flex: 1 1 auto;
+}
+
+.lista-tipos {
+    max-height: calc(100vh - 265px);
+    overflow: auto;
+    flex: 1 1 auto;
+}
+
+.tabla-tipos,
+.tabla-atributos {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-atributos .fila-sin-atributos td {
+    text-align: center;
+}
+
+.tabla-tipos th,
+.tabla-tipos td,
+.tabla-atributos th,
+.tabla-atributos td {
+    border: 1px solid #eee;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 12.8px;
+}
+
+.tabla-tipos th,
+.tabla-atributos th {
+    background: #f0f0f0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #555;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.tipo-item {
+    cursor: pointer;
+}
+
+.tipo-item:hover,
+.atributo-item:hover {
+    background: #f8fafc;
+}
+
+.tipo-item:focus,
+.atributo-item:focus {
+    outline: 2px solid #7ea6df;
+    outline-offset: -2px;
+}
+
+.tabla-tipos tbody tr.seleccionado {
+    background: #c0c0c0;
+    font-weight: 600;
+}
+
+.tabla-atributos tbody tr.seleccionado {
+    background: #ececec;
+}
+
+.tabla-atributos tbody tr.activo-especificacion {
+    background: #c0c0c0;
+    font-weight: 600;
+}
+
+.editor-especificaciones-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.editor-especificaciones {
+    border: 1px solid #e1e7f0;
+    border-radius: 8px;
+    background: #f9fbff;
+    padding: 10px;
+    min-height: 220px;
+}
+
+.editor-especificaciones-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.editor-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.editor-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4b5565;
+}
+
+.editor-field select,
+.editor-field input {
+    width: 100%;
+    height: 32px;
+    border: 1px solid #d2d8e1;
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 12.5px;
+}
+
+.editor-field-opciones {
+    grid-column: 1 / -1;
+}
+
+.esp-tipo-fijo {
+    background: #eef2f7;
+    color: #3f4b5a;
+    font-weight: 600;
+}
+
+.lista-opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.lista-opciones-items {
+    margin: 0;
+    padding-left: 18px;
+    max-height: none;
+    overflow: visible;
+}
+
+.lista-opciones-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.lista-opciones-agregar {
+    display: flex;
+    gap: 4px;
+}
+
+.lista-opciones-agregar input {
+    flex: 1 1 auto;
+}
+
+.btn-opcion-add {
+    min-width: 32px;
+    padding: 0 10px;
+}
+
+.btn-opcion-quitar {
+    border: 1px solid #d8b4b4;
+    background: #fff1f1;
+    color: #8f1d1d;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 1px 6px;
+}
+
+.estado-autoguardado {
+    font-size: 12.8px;
+    color: #2f6f2f;
+}
+
+.estado-autoguardado.estado-guardando {
+    color: #8a6d1d;
+}
+
+.estado-autoguardado.estado-error {
+    color: #a02d2d;
+}
+
+.panel-especificaciones .tabla-especificaciones-wrap {
+    max-height: none;
+    overflow: visible;
+    flex: 1 1 auto;
+}
+
+.form-inline-unidad {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.form-inline-unidad input {
+    width: 100%;
+}
+
+.tabla-unidades-wrap {
+    max-height: 280px;
+    overflow: auto;
+}
+
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+th.sortable:hover {
+    background: #e0e0e0;
+}
+
+.sort-icon {
+    margin-left: 4px;
+    font-size: 11px;
+    color: #555;
+}
+
+.estado-vacio,
+.td-vacio {
+    color: #606c7a;
+    font-style: italic;
+}
+
+@media (max-width: 1100px) {
+    .atributos-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .lista-atributos,
+    .lista-tipos,
+    .panel-especificaciones .tabla-especificaciones-wrap {
+        max-height: none;
+    }
+}

@@ -334,7 +334,7 @@
 <!-- ============================================
      MODAL ALTA DE EQUIPO EXCLUSIVO DE FACTURAS
      ============================================ -->
-<div id="modalEquipoFactura" class="modal-overlay" data-modal-focus="#equipoFacturaIdTipo" aria-hidden="true" data-route-equipos-crear="{{ route('equipos.crear') }}">
+<div id="modalEquipoFactura" class="modal-overlay" data-modal-focus="#equipoFacturaIdTipo" aria-hidden="true" data-route-equipos-crear="{{ route('equipos.crear') }}" data-route-atributos-tipo="{{ route('equipos.atributosPorTipo', ['idTipo' => '__ID__']) }}" data-route-gestor-atributos="{{ route('atributosTiposEquipos.index') }}" data-route-crear-atributo-tipo="{{ route('atributosTiposEquipos.tipos.atributos.crear', ['idTipo' => '__TIPO__']) }}" data-route-crear-opcion-atributo="{{ route('atributosTiposEquipos.tipos.atributos.opciones.crear', ['idTipo' => '__TIPO__', 'idAtributo' => '__ATTR__']) }}">
     <div class="modal-equipo">
         <div class="modal-equipo-header">
             <h2>Alta de Equipo desde Factura <span id="equipoFacturaRowInfo" style="font-size: 0.85em; color: #666; font-weight: normal;"></span></h2>
@@ -474,6 +474,14 @@
                         <textarea id="equipoFacturaObservacion" name="observacion" rows="5" class="form-control"></textarea>
                     </div>
 
+                    <div class="form-grupo" id="equipoFacturaAtributosBlock" hidden>
+                        <div class="equipo-atributos-header">
+                            <label>Atributos</label>
+                            <button type="button" class="btn btn-agregar-entidad btn-atributos-gestor" id="btnAbrirGestorAtributosEquipoFactura" title="Crear atributo">+</button>
+                        </div>
+                        <div id="equipoFacturaAtributosContainer" class="equipo-atributos-container"></div>
+                    </div>
+
                     <div class="form-grupo form-grupo-imagen">
                         <label for="equipoFacturaImagen">Imagen del equipo</label>
                         <input type="file" id="equipoFacturaImagen" name="imagen" accept="image/*" class="form-control-file-input">
@@ -518,3 +526,47 @@
         </form>
     </div>
 </div>
+
+<div id="modalAtributoEquipoFactura" class="modal-overlay" aria-hidden="true" data-modal-focus="#equipoFacturaNuevoAtributoNombre">
+    <div class="modal-sector">
+        <div class="modal-sector-header">
+            <h2>Nuevo Atributo</h2>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalAtributoEquipoFactura()" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formAtributoEquipoFactura" class="modal-sector-body">
+            <div class="form-grupo">
+                <label for="equipoFacturaNuevoAtributoNombre">Nombre *</label>
+                <input type="text" id="equipoFacturaNuevoAtributoNombre" maxlength="30" required autocomplete="off" class="form-control">
+            </div>
+            <div class="modal-sector-footer">
+                <button type="button" class="btn btn-secundario" onclick="cerrarModalAtributoEquipoFactura()"><span class="footer-acc-label"><span class="acc-k">C</span>ancelar</span></button>
+                <button type="submit" class="btn btn-primario"><span class="footer-acc-label">Crea<span class="acc-k">r</span></span></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalOpcionAtributoEquipoFactura" class="modal-overlay" aria-hidden="true" data-modal-focus="#equipoFacturaNuevaOpcionAtributoValor">
+    <div class="modal-sector">
+        <div class="modal-sector-header">
+            <h2>Nueva Opción</h2>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalOpcionAtributoEquipoFactura()" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formOpcionAtributoEquipoFactura" class="modal-sector-body">
+            <input type="hidden" id="equipoFacturaOpcionAtributoId" value="">
+            <div class="form-grupo">
+                <label for="equipoFacturaOpcionAtributoNombre">Atributo</label>
+                <input type="text" id="equipoFacturaOpcionAtributoNombre" class="form-control" readonly>
+            </div>
+            <div class="form-grupo">
+                <label for="equipoFacturaNuevaOpcionAtributoValor">Opción *</label>
+                <input type="text" id="equipoFacturaNuevaOpcionAtributoValor" maxlength="30" required autocomplete="off" class="form-control">
+            </div>
+            <div class="modal-sector-footer">
+                <button type="button" class="btn btn-secundario" onclick="cerrarModalOpcionAtributoEquipoFactura()">Cancelar</button>
+                <button type="submit" class="btn btn-primario">Crear</button>
+            </div>
+        </form>
+    </div>
+</div>
+

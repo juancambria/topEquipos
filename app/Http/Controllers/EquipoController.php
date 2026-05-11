@@ -11,6 +11,8 @@ use App\Models\Modelo;
 use App\Models\Proveedor;
 use App\Models\Ubicacion;
 use App\Models\Sector;
+use App\Models\TipoAtributoEspecificacion;
+use App\Models\EquipoAtributoValor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -21,7 +23,7 @@ class EquipoController extends Controller
     public function index(Request $request)
     {
         $query = Equipo::where('equipos.estado', 'activo')
-            ->with(['marca', 'tipo', 'modelo', 'proveedor', 'ubicacion', 'sector']); 
+            ->with(['marca', 'tipo', 'modelo', 'proveedor', 'ubicacion', 'sector', 'atributoValores.atributo']);
 
         if ($request->filled('search')) {
             if ($request->filled('searchColumn')) {
@@ -154,7 +156,7 @@ class EquipoController extends Controller
     public function inactivos(Request $request)
     {
         $query = Equipo::where('equipos.estado', 'baja')
-            ->with(['marca', 'tipo', 'modelo', 'proveedor', 'ubicacion', 'sector']);
+            ->with(['marca', 'tipo', 'modelo', 'proveedor', 'ubicacion', 'sector', 'atributoValores.atributo']);
 
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
@@ -272,6 +274,7 @@ class EquipoController extends Controller
         unset($data['imagen_actual']);
 
         $equipo = Equipo::crear($data);
+        $this->sincronizarAtributosEquipo($equipo, (int) $data['idTipo'], (array) $request->input('atributo_valores', []));
 
         // Asegurar que numeroFactura sea asignado correctamente
         if (empty($equipo->numeroFactura)) {
@@ -395,6 +398,7 @@ class EquipoController extends Controller
         }
 
         $equipo->actualizar($data);
+        $this->sincronizarAtributosEquipo($equipo, (int) $data['idTipo'], (array) $request->input('atributo_valores', []));
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -576,5 +580,128 @@ class EquipoController extends Controller
             $precioRenglon = (float) ($detalle->precioUnitario ?? 0);
             $equipo->factura_precio_equipo = $cantidad > 0 ? ($precioRenglon / $cantidad) : 0;
         });
+    }
+
+    public function atributosPorTipo(int $idTipo)
+    {
+        $tipo = Tipo::activos()->where('idTipo', $idTipo)->firstOrFail();
+
+        $atributos = TipoAtributoEspecificacion::query()
+            ->with('atributo:idAtributo,nombre')
+            ->where('idTipo', $tipo->idTipo)
+            ->orderBy('idAtributo')
+            ->get()
+            ->map(function (TipoAtributoEspecificacion $esp) {
+                $opciones = $this->extraerOpciones($esp->valores_permitidos);
+                return [
+                    'idAtributo' => (int) $esp->idAtributo,
+                    'nombre' => $esp->atributo?->nombre ?? ('Atributo #' . $esp->idAtributo),
+                    'unidad_medida' => $esp->unidad_medida,
+                    'tipo_especificacion' => 'rango_valores',
+                    'opciones' => $opciones,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'tipo' => [
+                'idTipo' => $tipo->idTipo,
+                'nombreTipo' => $tipo->nombreTipo,
+            ],
+            'atributos' => $atributos,
+        ]);
+    }
+
+    protected function sincronizarAtributosEquipo(Equipo $equipo, int $idTipo, array $valores): void
+    {
+        $definidos = TipoAtributoEspecificacion::query()
+            ->where('idTipo', $idTipo)
+            ->get(['idAtributo', 'valores_permitidos'])
+            ->keyBy('idAtributo');
+
+        if ($definidos->isEmpty()) {
+            EquipoAtributoValor::where('equipo_id', $equipo->id)->delete();
+            return;
+        }
+
+        $permitidosPorAtributo = [];
+        foreach ($definidos as $idAtributo => $def) {
+            $permitidosPorAtributo[(int) $idAtributo] = $this->extraerOpciones($def->valores_permitidos);
+        }
+
+        $aGuardar = [];
+        foreach ($valores as $idAtributoRaw => $valorRaw) {
+            $idAtributo = (int) $idAtributoRaw;
+            if (!isset($permitidosPorAtributo[$idAtributo])) {
+                continue;
+            }
+
+            $valor = $this->cleanString(is_scalar($valorRaw) ? (string) $valorRaw : null);
+            if ($valor === null) {
+                continue;
+            }
+
+            $permitidos = $permitidosPorAtributo[$idAtributo];
+            if (!empty($permitidos)) {
+                $esValido = collect($permitidos)->contains(function ($op) use ($valor) {
+                    return mb_strtolower(trim((string) $op)) === mb_strtolower($valor);
+                });
+                if (!$esValido) {
+                    continue;
+                }
+            }
+
+            $aGuardar[$idAtributo] = $valor;
+        }
+
+        DB::transaction(function () use ($equipo, $aGuardar) {
+            $ids = array_keys($aGuardar);
+            if (empty($ids)) {
+                EquipoAtributoValor::where('equipo_id', $equipo->id)->delete();
+                return;
+            }
+
+            EquipoAtributoValor::where('equipo_id', $equipo->id)
+                ->whereNotIn('idAtributo', $ids)
+                ->delete();
+
+            foreach ($aGuardar as $idAtributo => $valor) {
+                EquipoAtributoValor::updateOrCreate(
+                    ['equipo_id' => $equipo->id, 'idAtributo' => $idAtributo],
+                    ['valor' => $valor]
+                );
+            }
+        });
+    }
+
+    protected function extraerOpciones(?string $raw): array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return [];
+        }
+
+        $json = json_decode($raw, true);
+        if (is_array($json)) {
+            return collect($json)
+                ->map(fn ($item) => trim((string) $item))
+                ->filter(fn ($item) => $item !== '')
+                ->values()
+                ->all();
+        }
+
+        if (str_contains($raw, "\n")) {
+            return collect(preg_split('/\R/u', $raw) ?: [])
+                ->map(fn ($item) => trim((string) $item))
+                ->filter(fn ($item) => $item !== '')
+                ->values()
+                ->all();
+        }
+
+        return collect(explode(',', $raw))
+            ->map(fn ($item) => trim((string) $item))
+            ->filter(fn ($item) => $item !== '')
+            ->values()
+            ->all();
     }
 }

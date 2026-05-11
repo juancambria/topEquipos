@@ -658,8 +658,277 @@ window.cerrarModalMarca = function() {
     var selectTipo = document.getElementById('equipoIdTipo');
     var selectMarca = document.getElementById('equipoIdMarca');
     var selectModelo = document.getElementById('equipoIdModelo');
+    var equipoAtributosBlock = document.getElementById('equipoAtributosBlock');
+    var equipoAtributosContainer = document.getElementById('equipoAtributosContainer');
+    var btnAbrirGestorAtributosEquipo = document.getElementById('btnAbrirGestorAtributosEquipo');
+    var modalAtributoEquipo = document.getElementById('modalAtributoEquipo');
+    var formAtributoEquipo = document.getElementById('formAtributoEquipo');
+    var inputAtributoEquipoNombre = document.getElementById('equipoNuevoAtributoNombre');
+    var modalOpcionAtributoEquipo = document.getElementById('modalOpcionAtributoEquipo');
+    var formOpcionAtributoEquipo = document.getElementById('formOpcionAtributoEquipo');
+    var inputOpcionAtributoEquipoId = document.getElementById('equipoOpcionAtributoId');
+    var inputOpcionAtributoEquipoNombre = document.getElementById('equipoOpcionAtributoNombre');
+    var inputNuevaOpcionAtributoValor = document.getElementById('equipoNuevaOpcionAtributoValor');
+    var equipoAtributosFetchGen = 0;
+    var equipoAtributosValoresActuales = {};
 
     function getEl(id) { return document.getElementById(id); }
+
+    function parseJsonObjectSafe(raw) {
+        if (!raw) return {};
+        try {
+            var parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (_e) {
+            return {};
+        }
+    }
+
+    function getRutaAtributosTipoEquipo(idTipo) {
+        if (!overlay || !overlay.dataset.routeAtributosTipo) {
+            return '/equipos/tipos/' + idTipo + '/atributos';
+        }
+        return String(overlay.dataset.routeAtributosTipo).replace('__ID__', String(idTipo));
+    }
+
+    function openGestionAtributosEquipo() {
+        if (!selectTipo || !selectTipo.value) {
+            toast('Seleccioná primero un tipo para crear atributos', 'warning');
+            return;
+        }
+        window.abrirModalAtributoEquipo();
+    }
+
+    function getRutaCrearAtributoPorTipo(idTipo) {
+        var template = overlay && overlay.dataset.routeCrearAtributoTipo
+            ? String(overlay.dataset.routeCrearAtributoTipo)
+            : '/atributos-tipos-equipos/tipos/__TIPO__/atributos/crear';
+        return template.replace('__TIPO__', String(idTipo));
+    }
+
+    function getRutaCrearOpcionAtributo(idTipo, idAtributo) {
+        var template = overlay && overlay.dataset.routeCrearOpcionAtributo
+            ? String(overlay.dataset.routeCrearOpcionAtributo)
+            : '/atributos-tipos-equipos/tipos/__TIPO__/atributos/__ATTR__/opciones/crear';
+        return template
+            .replace('__TIPO__', String(idTipo))
+            .replace('__ATTR__', String(idAtributo));
+    }
+
+    function cerrarModalConOverlay(modalId) {
+        var modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.setAttribute('aria-hidden', 'true');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        if (window.overlayEquipoOculto && overlay) {
+            overlay.style.display = 'flex';
+            overlay.classList.add('show');
+            overlay.classList.remove('modal-oculto');
+            overlay.setAttribute('aria-hidden', 'false');
+            window.overlayEquipoOculto = false;
+        }
+    }
+
+    function bindStrictTabTrap(modal) {
+        if (!modal || modal.dataset.strictTrapBound === '1') return;
+        modal.dataset.strictTrapBound = '1';
+        modal.addEventListener('keydown', function (e) {
+            if (e.key !== 'Tab') return;
+            var focusables = Array.prototype.slice.call(modal.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(function (el) {
+                var st = window.getComputedStyle(el);
+                return st.display !== 'none' && st.visibility !== 'hidden' && el.getClientRects().length > 0;
+            });
+            if (!focusables.length) return;
+            var first = focusables[0];
+            var last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+                return;
+            }
+            if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }, true);
+    }
+
+    window.cerrarModalAtributoEquipo = function () {
+        if (formAtributoEquipo) formAtributoEquipo.reset();
+        cerrarModalConOverlay('modalAtributoEquipo');
+    };
+
+    window.cerrarModalOpcionAtributoEquipo = function () {
+        if (formOpcionAtributoEquipo) formOpcionAtributoEquipo.reset();
+        cerrarModalConOverlay('modalOpcionAtributoEquipo');
+    };
+
+    window.abrirModalAtributoEquipo = function () {
+        if (!modalAtributoEquipo) return;
+        window.overlayEquipoOculto = false;
+        modalAtributoEquipo.setAttribute('aria-hidden', 'false');
+        modalAtributoEquipo.classList.add('show');
+        modalAtributoEquipo.style.display = 'flex';
+        modalAtributoEquipo.style.zIndex = '130000';
+        if (inputAtributoEquipoNombre) {
+            inputAtributoEquipoNombre.value = '';
+        }
+        if (typeof window.__refocusModal === 'function') {
+            window.__refocusModal(modalAtributoEquipo);
+        }
+        if (typeof window.__scheduleModalFooterAccents === 'function') {
+            window.__scheduleModalFooterAccents();
+        }
+        if (inputAtributoEquipoNombre) {
+            setTimeout(function () {
+                inputAtributoEquipoNombre.focus();
+                inputAtributoEquipoNombre.select();
+            }, 10);
+        }
+    };
+
+    window.abrirModalOpcionAtributoEquipo = function (idAtributo, nombreAtributo) {
+        if (!modalOpcionAtributoEquipo) return;
+        if (!selectTipo || !selectTipo.value) {
+            toast('Seleccioná primero un tipo', 'warning');
+            return;
+        }
+        window.overlayEquipoOculto = false;
+        if (inputOpcionAtributoEquipoId) {
+            inputOpcionAtributoEquipoId.value = String(idAtributo || '');
+        }
+        if (inputOpcionAtributoEquipoNombre) {
+            inputOpcionAtributoEquipoNombre.value = String(nombreAtributo || '');
+        }
+        if (inputNuevaOpcionAtributoValor) {
+            inputNuevaOpcionAtributoValor.value = '';
+        }
+        modalOpcionAtributoEquipo.setAttribute('aria-hidden', 'false');
+        modalOpcionAtributoEquipo.classList.add('show');
+        modalOpcionAtributoEquipo.style.display = 'flex';
+        modalOpcionAtributoEquipo.style.zIndex = '130000';
+        if (typeof window.__refocusModal === 'function') {
+            window.__refocusModal(modalOpcionAtributoEquipo);
+        }
+        if (typeof window.__scheduleModalFooterAccents === 'function') {
+            window.__scheduleModalFooterAccents();
+        }
+    }
+
+    function snapshotAtributosEquipoActual() {
+        if (!equipoAtributosContainer) return '{}';
+        var values = {};
+        equipoAtributosContainer.querySelectorAll('select[data-atributo-id]').forEach(function(sel) {
+            var idAtributo = String(sel.dataset.atributoId || '').trim();
+            if (!idAtributo) return;
+            var value = String(sel.value || '').trim();
+            if (value) values[idAtributo] = value;
+        });
+        return JSON.stringify(values);
+    }
+
+    function renderAtributosEquipo(atributos, valoresIniciales) {
+        if (!equipoAtributosBlock || !equipoAtributosContainer) return;
+
+        var lista = Array.isArray(atributos) ? atributos : [];
+        var tipoActual = selectTipo ? String(selectTipo.value || '').trim() : '';
+        if (!lista.length) {
+            equipoAtributosBlock.hidden = !tipoActual;
+            equipoAtributosContainer.innerHTML = '';
+            equipoAtributosValoresActuales = {};
+            return;
+        }
+
+        equipoAtributosBlock.hidden = false;
+        equipoAtributosContainer.innerHTML = '';
+        var valores = valoresIniciales && typeof valoresIniciales === 'object' ? valoresIniciales : {};
+        equipoAtributosValoresActuales = valores;
+
+        lista.forEach(function(attr) {
+            var row = document.createElement('div');
+            row.className = 'equipo-atributo-item';
+
+            var label = document.createElement('div');
+            label.className = 'equipo-atributo-label';
+            label.textContent = String(attr.nombre || ('Atributo #' + attr.idAtributo));
+
+            var btnOpcion = document.createElement('button');
+            btnOpcion.type = 'button';
+            btnOpcion.className = 'btn btn-agregar-entidad equipo-atributo-add-opcion';
+            btnOpcion.textContent = '+';
+            btnOpcion.title = 'Crear opción para este atributo';
+            btnOpcion.addEventListener('click', function () {
+                window.abrirModalOpcionAtributoEquipo(attr.idAtributo, attr.nombre || ('Atributo #' + attr.idAtributo));
+            });
+
+            var select = document.createElement('select');
+            select.className = 'form-control';
+            select.name = 'atributo_valores[' + String(attr.idAtributo) + ']';
+            select.dataset.atributoId = String(attr.idAtributo);
+
+            var optionEmpty = document.createElement('option');
+            optionEmpty.value = '';
+            optionEmpty.textContent = '— Seleccionar opción —';
+            select.appendChild(optionEmpty);
+
+            var opciones = Array.isArray(attr.opciones) ? attr.opciones : [];
+            opciones.forEach(function(op) {
+                var option = document.createElement('option');
+                option.value = String(op);
+                option.textContent = String(op);
+                select.appendChild(option);
+            });
+
+            var valorGuardado = valores[String(attr.idAtributo)] || '';
+            if (valorGuardado) {
+                select.value = String(valorGuardado);
+            }
+
+            select.addEventListener('change', actualizarEstadoSubmitEquipo);
+
+            var controlRow = document.createElement('div');
+            controlRow.className = 'equipo-atributo-control-row';
+            controlRow.appendChild(select);
+            controlRow.appendChild(btnOpcion);
+
+            row.appendChild(label);
+            row.appendChild(controlRow);
+            equipoAtributosContainer.appendChild(row);
+        });
+    }
+
+    function cargarAtributosPorTipoEquipo(idTipo, valoresIniciales) {
+        if (!equipoAtributosBlock || !equipoAtributosContainer) return;
+        if (!idTipo) {
+            renderAtributosEquipo([], {});
+            actualizarEstadoSubmitEquipo();
+            return;
+        }
+
+        var gen = ++equipoAtributosFetchGen;
+        fetch(getRutaAtributosTipoEquipo(idTipo), {
+            headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest' }),
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (gen !== equipoAtributosFetchGen) return;
+                if (!data || !data.success) {
+                    renderAtributosEquipo([], {});
+                    return;
+                }
+                renderAtributosEquipo(data.atributos || [], valoresIniciales || {});
+                actualizarEstadoSubmitEquipo();
+            })
+            .catch(function(error) {
+                console.error('Error al cargar atributos por tipo:', error);
+                if (gen !== equipoAtributosFetchGen) return;
+                renderAtributosEquipo([], {});
+                actualizarEstadoSubmitEquipo();
+            });
+    }
 
     function formatPrecioPanelEquipo(v) {
         if (v === '' || v == null) return '—';
@@ -742,6 +1011,7 @@ window.cerrarModalMarca = function() {
             informaSeguro: getEl('equipoInformaSeguro') ? (getEl('equipoInformaSeguro').checked ? '1' : '0') : '0',
             imagenActual: imagenActualInput ? imagenActualInput.value : '',
             imagenNueva: imagenInput && imagenInput.files && imagenInput.files.length > 0 ? '1' : '0',
+            atributosJson: snapshotAtributosEquipoActual(),
         };
     }
 
@@ -1136,6 +1406,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             if (selectModelo) {
                 selectModelo.innerHTML = '<option value="">— Seleccionar modelo —</option>';
             }
+            cargarAtributosPorTipoEquipo(this.value, {});
         });
     }
 
@@ -1227,6 +1498,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             getEl('equipoObservacion').value = '';
             getEl('equipoIdTipo').value = '';
             cargarMarcasPorTipo('', '');
+            cargarAtributosPorTipoEquipo('', {});
             getEl('equipoIdModelo').innerHTML = '<option value="">— Seleccionar modelo —</option>';
             getEl('equipoUbicacionId').value = '';
             getEl('equipoSectorId').value = '';
@@ -1268,6 +1540,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             var idTipoEdit = dataset.idTipo || '';
             var idMarcaEdit = dataset.idMarca || '';
             var idModeloEdit = dataset.idModelo || '';
+            var atributosValoresEdit = parseJsonObjectSafe(dataset.atributosValores || '{}');
             getEl('equipoPrecio').value = dataset.precio || '';
             getEl('equipoVtoGarantia').value = dataset.vtoGarantia || '';
             getEl('equipoNumeroFactura').value = dataset.numeroFactura || '';
@@ -1329,6 +1602,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
                 informaSeguro: dataset.informaSeguro === '1' || dataset.informaSeguro === 'true' ? '1' : '0',
                 imagenActual: imagenUrl || '',
                 imagenNueva: '0',
+                atributosJson: JSON.stringify(atributosValoresEdit),
             };
             equipoHasChanges = false;
             equipoEditMode = true;
@@ -1344,6 +1618,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
                     actualizarEstadoSubmitEquipo();
                 });
             });
+            cargarAtributosPorTipoEquipo(idTipoEdit, atributosValoresEdit);
         }
         if (mode === 'crear' || !dataset) {
             refreshEquipoPanelFacturaMain();
@@ -1390,6 +1665,132 @@ function forceCerrarModalEquipo() {
     if (overlay) {
         overlay.addEventListener('click', function(e) { if (e.target === overlay) cerrarModalEquipo(); });
         bindPanelFacturaEquipoListeners();
+    }
+
+    if (modalAtributoEquipo && modalAtributoEquipo.dataset.bound !== '1') {
+        modalAtributoEquipo.dataset.bound = '1';
+        bindStrictTabTrap(modalAtributoEquipo);
+        modalAtributoEquipo.addEventListener('click', function (e) {
+            if (e.target === modalAtributoEquipo) {
+                window.cerrarModalAtributoEquipo();
+            }
+        });
+    }
+
+    if (modalOpcionAtributoEquipo && modalOpcionAtributoEquipo.dataset.bound !== '1') {
+        modalOpcionAtributoEquipo.dataset.bound = '1';
+        modalOpcionAtributoEquipo.addEventListener('click', function (e) {
+            if (e.target === modalOpcionAtributoEquipo) {
+                window.cerrarModalOpcionAtributoEquipo();
+            }
+        });
+    }
+
+    if (formAtributoEquipo && formAtributoEquipo.dataset.bound !== '1') {
+        formAtributoEquipo.dataset.bound = '1';
+        formAtributoEquipo.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var idTipoActual = selectTipo ? String(selectTipo.value || '').trim() : '';
+            var nombre = inputAtributoEquipoNombre ? String(inputAtributoEquipoNombre.value || '').slice(0, 30).trim() : '';
+            if (!idTipoActual) {
+                toast('Seleccioná un tipo antes de crear atributos', 'warning');
+                return;
+            }
+            if (!nombre) {
+                toast('Ingresá un nombre de atributo', 'warning');
+                return;
+            }
+
+            fetch(getRutaCrearAtributoPorTipo(idTipoActual), {
+                method: 'POST',
+                headers: CrudCommon.jsonHeaders({
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }),
+                body: JSON.stringify({ nombre: nombre }),
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    var errorNombre = data && data.errors && Array.isArray(data.errors.nombre) ? data.errors.nombre[0] : '';
+                    toast(errorNombre || (data && data.message ? data.message : 'No se pudo crear el atributo'), 'error');
+                    return;
+                }
+                toast(data.message || 'Atributo creado correctamente', 'success');
+                window.cerrarModalAtributoEquipo();
+                var snapshot = parseJsonObjectSafe(snapshotAtributosEquipoActual());
+                if (selectTipo && selectTipo.value) {
+                    cargarAtributosPorTipoEquipo(selectTipo.value, snapshot);
+                }
+            })
+            .catch(function () {
+                toast('Error al crear el atributo', 'error');
+            });
+        });
+    }
+
+    if (formOpcionAtributoEquipo && formOpcionAtributoEquipo.dataset.bound !== '1') {
+        formOpcionAtributoEquipo.dataset.bound = '1';
+        formOpcionAtributoEquipo.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var idTipoActual = selectTipo ? String(selectTipo.value || '').trim() : '';
+            var idAtributo = inputOpcionAtributoEquipoId ? String(inputOpcionAtributoEquipoId.value || '').trim() : '';
+            var valor = inputNuevaOpcionAtributoValor ? String(inputNuevaOpcionAtributoValor.value || '').slice(0, 30).trim() : '';
+            if (!idTipoActual || !idAtributo) {
+                toast('No se pudo identificar el atributo seleccionado', 'error');
+                return;
+            }
+            if (!valor) {
+                toast('Ingresá una opción válida', 'warning');
+                return;
+            }
+
+            fetch(getRutaCrearOpcionAtributo(idTipoActual, idAtributo), {
+                method: 'POST',
+                headers: CrudCommon.jsonHeaders({
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }),
+                body: JSON.stringify({ valor: valor }),
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    var errorValor = data && data.errors && Array.isArray(data.errors.valor) ? data.errors.valor[0] : '';
+                    toast(errorValor || (data && data.message ? data.message : 'No se pudo crear la opción'), 'error');
+                    return;
+                }
+                toast(data.message || 'Opción creada correctamente', 'success');
+                window.cerrarModalOpcionAtributoEquipo();
+                var snapshot = parseJsonObjectSafe(snapshotAtributosEquipoActual());
+                snapshot[String(idAtributo)] = valor;
+                if (selectTipo && selectTipo.value) {
+                    cargarAtributosPorTipoEquipo(selectTipo.value, snapshot);
+                }
+            })
+            .catch(function () {
+                toast('Error al crear la opción', 'error');
+            });
+        });
+    }
+
+    if (btnAbrirGestorAtributosEquipo && btnAbrirGestorAtributosEquipo.dataset.bound !== '1') {
+        btnAbrirGestorAtributosEquipo.dataset.bound = '1';
+        btnAbrirGestorAtributosEquipo.addEventListener('click', openGestionAtributosEquipo);
+    }
+
+    if (typeof window.debugClick === 'function') {
+        var originalDebugClick = window.debugClick;
+        if (!originalDebugClick.__equipoAttrsWrapped) {
+            window.debugClick = function(tipo) {
+                if (String(tipo || '').toLowerCase() === 'atributo') {
+                    openGestionAtributosEquipo();
+                    return;
+                }
+                return originalDebugClick.apply(this, arguments);
+            };
+            window.debugClick.__equipoAttrsWrapped = true;
+        }
     }
 
     document.querySelectorAll('#tablaEquipos .fila-equipo-editar').forEach(function(row) {

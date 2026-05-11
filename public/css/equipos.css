@@ -346,6 +346,34 @@
     color: #333;
 }
 
+.equipo-atributos-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.equipo-atributos-header label {
+    margin-bottom: 0;
+}
+
+.equipo-atributos-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.equipo-atributo-item {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px;
+    background: #fafafa;
+}
+
+.equipo-atributo-item label {
+    margin-bottom: 4px;
+}
+
 .form-grupo input,
 .form-grupo select {
     width: 100%;
