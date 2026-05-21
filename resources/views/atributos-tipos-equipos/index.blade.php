@@ -57,11 +57,11 @@
             <div class="panel-heading-inline">
                 <h2>Atributos</h2>
                 <div class="panel-actions-inline">
-                    <button type="button" class="btn btn-secundario tool-btn btn-panel-action" onclick="abrirModalUnidadesMedida()">
+                    <button type="button" class="btn btn-secundario tool-btn btn-panel-action" data-toolbar-key="u" onclick="abrirModalUnidadesMedida()" title="Unidades (Alt+U)">
                         <span class="tool-icon">📏</span>
                         <span class="tool-label">Unidades</span>
                     </button>
-                    <button type="button" class="btn btn-primario tool-btn btn-panel-action" onclick="abrirModalCrearAtributo()">
+                    <button type="button" class="btn btn-primario tool-btn btn-panel-action" data-toolbar-key="a" onclick="abrirModalCrearAtributo()" title="Crear atributo (Alt+A)">
                         <span class="tool-icon">➕</span>
                         <span class="tool-label">Crear atributo</span>
                     </button>

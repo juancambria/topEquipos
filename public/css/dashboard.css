@@ -119,6 +119,64 @@ body.window-embedded {
     background: rgba(255,255,255,0.12);
 }
 
+.app-submenu {
+    position: relative;
+}
+
+.app-submenu-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #f1f1f1;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: default;
+}
+
+.app-submenu:hover .app-submenu-toggle {
+    background: rgba(255,255,255,0.12);
+}
+
+.app-submenu-arrow {
+    font-size: 10px;
+    opacity: 0.9;
+}
+
+.app-submenu-panel {
+    position: absolute;
+    top: -8px;
+    left: 100%;
+    min-width: 220px;
+    display: none;
+    flex-direction: column;
+    padding: 8px;
+    border: 1px solid #2f2f2f;
+    border-radius: 12px;
+    background: rgba(39, 39, 39, 0.98);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+    z-index: 1250;
+}
+
+.app-submenu::after {
+    content: "";
+    position: absolute;
+    top: -8px;
+    right: -12px;
+    width: 12px;
+    height: calc(100% + 16px);
+}
+
+.app-submenu:hover .app-submenu-panel {
+    display: flex;
+}
+
 .topbar-shortcuts {
     display: flex;
     align-items: center;

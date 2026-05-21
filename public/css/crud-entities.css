@@ -3,7 +3,8 @@
     .pagina-tipos,
     .pagina-modelos,
     .pagina-proveedores,
-    .pagina-contactos
+    .pagina-contactos,
+    .pagina-hm
 ) {
     max-width: 100%;
 }
@@ -15,7 +16,8 @@
     .proveedores-header,
     .contactos-header,
     .ubicaciones-header,
-    .sectores-header
+    .sectores-header,
+    .hm-header
 ) {
     display: flex;
     flex-direction: column;
@@ -31,7 +33,8 @@
     .proveedores-header,
     .contactos-header,
     .ubicaciones-header,
-    .sectores-header
+    .sectores-header,
+    .hm-header
 ) h1 {
     margin: 0;
     font-size: 1.35rem;
@@ -44,7 +47,8 @@
     .proveedores-toolbar,
     .contactos-toolbar,
     .ubicaciones-toolbar,
-    .sectores-toolbar
+    .sectores-toolbar,
+    .hm-toolbar
 ) {
     display: flex;
     align-items: center;
@@ -138,14 +142,16 @@
     .tipos-toolbar,
     .modelos-toolbar,
     .proveedores-toolbar,
-    .contactos-toolbar
+    .contactos-toolbar,
+    .hm-toolbar
 ) .btn,
 :is(
     .marcas-toolbar,
     .tipos-toolbar,
     .modelos-toolbar,
     .proveedores-toolbar,
-    .contactos-toolbar
+    .contactos-toolbar,
+    .hm-toolbar
 ) .tool-btn {
     border-radius: 4px;
     margin-left: 0;
@@ -165,7 +171,8 @@
     .tipos-toolbar,
     .modelos-toolbar,
     .proveedores-toolbar,
-    .contactos-toolbar
+    .contactos-toolbar,
+    .hm-toolbar
 ) .tool-btn {
     font-size: 14px;
     color: #333;
@@ -178,7 +185,8 @@
     .tipos-toolbar,
     .modelos-toolbar,
     .proveedores-toolbar,
-    .contactos-toolbar
+    .contactos-toolbar,
+    .hm-toolbar
 ) .tool-btn .tool-icon {
     width: 20px;
     height: 20px;
@@ -196,7 +204,8 @@
     .tipos-toolbar,
     .modelos-toolbar,
     .proveedores-toolbar,
-    .contactos-toolbar
+    .contactos-toolbar,
+    .hm-toolbar
 ) .tool-btn .tool-label {
     font-size: 14px;
     color: #333;
@@ -207,7 +216,8 @@
     .tipos-toolbar,
     .modelos-toolbar,
     .proveedores-toolbar,
-    .contactos-toolbar
+    .contactos-toolbar,
+    .hm-toolbar
 ) .tool-btn:disabled {
     opacity: .55;
     cursor: not-allowed;

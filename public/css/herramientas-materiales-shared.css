@@ -1,0 +1,22 @@
+.hm-toolbar {
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.hm-toolbar .search-wrapper {
+    flex: 0 1 240px;
+}
+
+.hm-toolbar .selected-info {
+    flex: 1 1 160px;
+    min-width: 120px;
+}
+
+#tablaHm tbody tr.seleccionado {
+    background: #c0c0c0;
+    font-weight: 600;
+}
+
+.hm-modal {
+    max-width: 560px;
+}

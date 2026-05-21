@@ -48,6 +48,30 @@
             }
         }
 
+        function confirmarAccion(titulo, mensaje, peligro) {
+            if (typeof window.abrirModalConfirmacion === 'function') {
+                return new Promise(function (resolve) {
+                    window.abrirModalConfirmacion(
+                        titulo || 'Confirmar acción',
+                        mensaje || '¿Desea continuar?',
+                        function () { resolve(true); },
+                        false,
+                        !!peligro
+                    );
+                    var overlay = document.getElementById('modal-confirmacion-overlay');
+                    if (!overlay) return;
+                    var observer = new MutationObserver(function () {
+                        if (!overlay.classList.contains('activo')) {
+                            observer.disconnect();
+                            resolve(false);
+                        }
+                    });
+                    observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+                });
+            }
+            return Promise.resolve(window.confirm(mensaje || '¿Desea continuar?'));
+        }
+
         function updateInfo() {
             if (!state.ubicacionId) {
                 infoSeleccion.textContent = 'Seleccione una ubicación y un sector.';
@@ -376,6 +400,11 @@
             }
 
             try {
+                var confirmadoAsignar = await confirmarAccion(
+                    'Asignar tipo',
+                    'Asignar tipo. ¿Desea continuar?'
+                );
+                if (!confirmadoAsignar) return;
                 await postJson('/lugares/equipos-sector/asignar', {
                     ubicacion_id: state.ubicacionId,
                     sector_id: state.sectorId,
@@ -395,6 +424,12 @@
             }
 
             try {
+                var confirmadoQuitar = await confirmarAccion(
+                    'Quitar tipo',
+                    'Quitar tipo. ¿Desea continuar?',
+                    true
+                );
+                if (!confirmadoQuitar) return;
                 await postJson('/lugares/equipos-sector/quitar', {
                     ubicacion_id: state.ubicacionId,
                     sector_id: state.sectorId,
@@ -426,6 +461,14 @@
             }
 
             try {
+                var confirmadoCantidad = await confirmarAccion(
+                    'Actualizar cantidad',
+                    'Actualizar cantidad. ¿Desea continuar?'
+                );
+                if (!confirmadoCantidad) {
+                    input.value = input.dataset.prev || '';
+                    return;
+                }
                 await postJson('/lugares/equipos-sector/cantidad', {
                     ubicacion_id: state.ubicacionId,
                     sector_id: state.sectorId,

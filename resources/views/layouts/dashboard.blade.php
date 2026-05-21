@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <link rel="stylesheet" href="{{ asset('css/facturas.css') }}">
     <link rel="stylesheet" href="{{ asset('css/equipos.css') }}">
+<link rel="stylesheet" href="{{ asset('css/herramientas-materiales-shared.css') }}">
     @yield('styles')
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
@@ -36,11 +37,41 @@
                                 General <span class="app-menu-arrow">▾</span>
                             </button>
                             <div class="app-menu-panel" id="menu-general">
-                                <a href="{{ route('equipos.index') }}">Equipos</a>
-                                <a href="{{ route('tipos.index') }}">Tipos</a>
-                                <a href="{{ route('marcas.index') }}">Marcas</a>
-                                <a href="{{ route('modelos.index') }}">Modelos</a>
-                                <a href="{{ route('atributosTiposEquipos.index') }}">Atributos de Tipos de Equipos</a>
+                                <div class="app-submenu">
+                                    <button type="button" class="app-submenu-toggle">
+                                        Gestión Equipos <span class="app-submenu-arrow">▸</span>
+                                    </button>
+                                    <div class="app-submenu-panel">
+                                        <a href="{{ route('tipos.index') }}">Tipos</a>
+                                        <a href="{{ route('marcas.index') }}">Marcas</a>
+                                        <a href="{{ route('modelos.index') }}">Modelos</a>
+                                        <a href="{{ route('atributosTiposEquipos.index') }}">Atributos de Tipos de Equipos</a>
+                                        <a href="{{ route('lugares.equiposSector.index') }}">Gestión de Equipos por Sector</a>
+                                        <a href="{{ route('equipos.index') }}">Equipos</a>
+                                    </div>
+                                </div>
+                                <div class="app-submenu">
+                                    <button type="button" class="app-submenu-toggle">
+                                        Gestión Herramientas <span class="app-submenu-arrow">▸</span>
+                                    </button>
+                                    <div class="app-submenu-panel">
+                                        <a href="{{ route('herramientas.familias.index') }}">Familias</a>
+                                        <a href="{{ route('herramientas.marcas.index') }}">Marcas</a>
+                                        <a href="{{ route('herramientas.modelos.index') }}">Modelos</a>
+                                        <a href="{{ route('herramientas.index') }}">Herramientas</a>
+                                    </div>
+                                </div>
+                                <div class="app-submenu">
+                                    <button type="button" class="app-submenu-toggle">
+                                        Gestión Materiales <span class="app-submenu-arrow">▸</span>
+                                    </button>
+                                    <div class="app-submenu-panel">
+                                        <a href="{{ route('materiales.familias.index') }}">Familias</a>
+                                        <a href="{{ route('materiales.marcas.index') }}">Marcas</a>
+                                        <a href="{{ route('materiales.modelos.index') }}">Modelos</a>
+                                        <a href="{{ route('materiales.index') }}">Materiales</a>
+                                    </div>
+                                </div>
                                 <a href="{{ route('historial.index') }}">Historial</a>
                             </div>
                         </div>
@@ -93,6 +124,14 @@
                         <a href="{{ route('facturas.index') }}" class="topbar-shortcut">
                             <span class="topbar-shortcut-icon">🧾</span>
                             Facturas
+                        </a>
+                        <a href="{{ route('herramientas.index') }}" class="topbar-shortcut">
+                            <span class="topbar-shortcut-icon">🧰</span>
+                            Herramientas
+                        </a>
+                        <a href="{{ route('materiales.index') }}" class="topbar-shortcut">
+                            <span class="topbar-shortcut-icon">📦</span>
+                            Materiales
                         </a>
                         <a href="{{ route('proveedores.index') }}" class="topbar-shortcut">
                             <span class="topbar-shortcut-icon">🏢</span>
@@ -172,6 +211,13 @@
 <script src="{{ asset('js/marcas.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/tipos.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modelos.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/herramientas-materiales-common.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/herramientas-materiales-main-factory.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/herramientas-materiales-catalogos-factory.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/herramientas-main.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/materiales-main.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/herramientas-catalogos-main.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/materiales-catalogos-main.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/atributos-tipos-equipos.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/proveedores.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/contactos.js') }}?v={{ time() }}"></script>

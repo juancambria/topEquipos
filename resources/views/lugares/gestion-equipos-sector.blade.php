@@ -72,7 +72,7 @@
 
             <div id="gesVistaAsignados" class="ges-oculto">
                 <div class="ges-centro-header">
-                    <button type="button" id="btnGesVolverSectores" class="btn btn-secundario ges-btn-volver" title="Volver a sectores">
+                    <button type="button" id="btnGesVolverSectores" class="btn btn-secundario ges-btn-volver" data-toolbar-key="v" title="Volver a sectores (Alt+V)">
                         ← Volver
                     </button>
                     <h2 id="gesTituloAsignados">Equipos del Sector</h2>
@@ -98,8 +98,8 @@
 
         <section class="ges-controles-columna">
             <section class="ges-controles">
-                <button type="button" id="btnGesAsignar" class="btn btn-primario ges-btn-flecha" disabled title="Agregar tipo al sector">←</button>
-                <button type="button" id="btnGesQuitar" class="btn btn-secundario ges-btn-flecha" disabled title="Quitar tipo del sector">→</button>
+                <button type="button" id="btnGesAsignar" class="btn btn-primario ges-btn-flecha" data-toolbar-key="a" disabled title="Agregar tipo al sector (Alt+A)">←</button>
+                <button type="button" id="btnGesQuitar" class="btn btn-secundario ges-btn-flecha" data-toolbar-key="q" disabled title="Quitar tipo del sector (Alt+Q)">→</button>
             </section>
         </section>
 

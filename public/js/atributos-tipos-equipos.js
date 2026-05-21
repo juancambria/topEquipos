@@ -51,6 +51,8 @@
         var guardadoEnCurso = false;
         var reintentarGuardado = false;
         var atributoActivoId = 0;
+        var modalAtributoDirty = false;
+        var modalUnidadesDirty = false;
         var LIMITES = {
             nombreAtributo: 30,
             nombreUnidad: 30,
@@ -630,33 +632,64 @@
         window.abrirModalCrearAtributo = function () {
             if (!modalAtributo) return;
             modalAtributo.setAttribute('aria-hidden', 'false');
+            modalAtributoDirty = false;
             if (inputNuevoAtributo) inputNuevoAtributo.focus();
         };
         window.cerrarModalCrearAtributo = function () {
             if (!modalAtributo) return;
-            modalAtributo.setAttribute('aria-hidden', 'true');
-            if (formCrearAtributo) formCrearAtributo.reset();
+            if (!modalAtributoDirty) {
+                modalAtributo.setAttribute('aria-hidden', 'true');
+                if (formCrearAtributo) formCrearAtributo.reset();
+                modalAtributoDirty = false;
+                return;
+            }
+            confirmarAccion('Cerrar atributo', 'Cerrar sin guardar cambios. ¿Desea continuar?')
+                .then(function (ok) {
+                    if (!ok) return;
+                    modalAtributo.setAttribute('aria-hidden', 'true');
+                    if (formCrearAtributo) formCrearAtributo.reset();
+                    modalAtributoDirty = false;
+                });
         };
         window.abrirModalUnidadesMedida = function () {
             if (!modalUnidades) return;
             modalUnidades.setAttribute('aria-hidden', 'false');
+            modalUnidadesDirty = false;
             if (inputNuevaUnidad) inputNuevaUnidad.focus();
         };
         window.cerrarModalUnidadesMedida = function () {
             if (!modalUnidades) return;
-            modalUnidades.setAttribute('aria-hidden', 'true');
-            if (formCrearUnidad) formCrearUnidad.reset();
+            if (!modalUnidadesDirty) {
+                modalUnidades.setAttribute('aria-hidden', 'true');
+                if (formCrearUnidad) formCrearUnidad.reset();
+                modalUnidadesDirty = false;
+                return;
+            }
+            confirmarAccion('Cerrar unidades', 'Cerrar sin guardar cambios. ¿Desea continuar?')
+                .then(function (ok) {
+                    if (!ok) return;
+                    modalUnidades.setAttribute('aria-hidden', 'true');
+                    if (formCrearUnidad) formCrearUnidad.reset();
+                    modalUnidadesDirty = false;
+                });
         };
 
         if (formCrearAtributo) {
+            formCrearAtributo.addEventListener('input', function () { modalAtributoDirty = true; });
             formCrearAtributo.addEventListener('submit', async function (event) {
                 event.preventDefault();
                 var nombre = String(inputNuevoAtributo.value || '').slice(0, LIMITES.nombreAtributo).trim();
                 if (!nombre) return;
+                var confirmarCrearAtributo = await confirmarAccion(
+                    'Crear atributo',
+                    'Crear atributo. ¿Desea continuar?'
+                );
+                if (!confirmarCrearAtributo) return;
                 try {
                     var atributo = await crearAtributo(nombre);
                     agregarAtributoAFila(atributo);
                     cerrarModalCrearAtributo();
+                    modalAtributoDirty = false;
                     mostrarToast('Atributo creado correctamente', 'success');
                 } catch (error) {
                     mostrarToast(error.message || 'Error al crear atributo', 'error');
@@ -665,10 +698,16 @@
         }
 
         if (formCrearUnidad) {
+            formCrearUnidad.addEventListener('input', function () { modalUnidadesDirty = true; });
             formCrearUnidad.addEventListener('submit', async function (event) {
                 event.preventDefault();
                 var nombre = String(inputNuevaUnidad.value || '').slice(0, LIMITES.nombreUnidad).trim();
                 if (!nombre) return;
+                var confirmarCrearUnidad = await confirmarAccion(
+                    'Crear unidad de medida',
+                    'Crear unidad de medida. ¿Desea continuar?'
+                );
+                if (!confirmarCrearUnidad) return;
                 try {
                     var unidad = await crearUnidad(nombre);
                     unidadesMedida.push(unidad);
@@ -676,6 +715,7 @@
                     renderTablaUnidades();
                     refrescarSelectsUnidades();
                     formCrearUnidad.reset();
+                    modalUnidadesDirty = false;
                     programarAutoGuardado(120);
                     mostrarToast('Unidad creada correctamente', 'success');
                 } catch (error) {
@@ -712,7 +752,7 @@
                 var nombre = (fila.querySelector('.atributo-nombre') || {}).textContent || '';
                 var confirmadoAtributo = await confirmarAccion(
                     'Eliminar atributo ' + nombre,
-                    'Estás por eliminar el atributo "' + nombre + '". ¿Desea continuar?'
+                    'Eliminar atributo. ¿Desea continuar?'
                 );
                 if (!confirmadoAtributo) return;
                 try {
@@ -746,7 +786,7 @@
                 var nombre = fila.dataset.unidadNombre || '';
                 var confirmadoUnidad = await confirmarAccion(
                     'Eliminar unidad de medida',
-                    '¿Eliminar la unidad "' + nombre + '"?'
+                    'Eliminar unidad de medida. ¿Desea continuar?'
                 );
                 if (!confirmadoUnidad) return;
                 try {

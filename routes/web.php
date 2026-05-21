@@ -16,6 +16,8 @@ use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\GestionEquipoSectorController;
 use App\Http\Controllers\AtributoTipoEquipoController;
+use App\Http\Controllers\HerramientaController;
+use App\Http\Controllers\MaterialController;
 
 /*
 |--------------------------------------------------------------------------
@@ -254,6 +256,66 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
         ->whereNumber(['id', 'pdfId'])
         ->name('pdfs.eliminar');
     Route::get('/{id}', [FacturaController::class, 'show'])->whereNumber('id')->name('show');
+});
+
+/*
+|--------------------------------------------------------------------------
+| HERRAMIENTAS (SEPARADO)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('herramientas')->name('herramientas.')->group(function () {
+    Route::get('/', [HerramientaController::class, 'index'])->name('index');
+    Route::get('/familias', [HerramientaController::class, 'indexFamilias'])->name('familias.index');
+    Route::get('/marcas', [HerramientaController::class, 'indexMarcas'])->name('marcas.index');
+    Route::get('/modelos', [HerramientaController::class, 'indexModelos'])->name('modelos.index');
+
+    Route::get('/api/familias', [HerramientaController::class, 'familias'])->name('api.familias');
+    Route::get('/api/marcas', [HerramientaController::class, 'marcas'])->name('api.marcas');
+    Route::get('/api/modelos', [HerramientaController::class, 'modelos'])->name('api.modelos');
+
+    Route::post('/familias/crear', [HerramientaController::class, 'crearFamilia'])->name('familias.crear');
+    Route::post('/familias/{id}/actualizar', [HerramientaController::class, 'actualizarFamilia'])->name('familias.actualizar');
+    Route::post('/familias/{id}/baja', [HerramientaController::class, 'bajaFamilia'])->name('familias.baja');
+    Route::post('/marcas/crear', [HerramientaController::class, 'crearMarca'])->name('marcas.crear');
+    Route::post('/marcas/{id}/actualizar', [HerramientaController::class, 'actualizarMarca'])->name('marcas.actualizar');
+    Route::post('/marcas/{id}/baja', [HerramientaController::class, 'bajaMarca'])->name('marcas.baja');
+    Route::post('/modelos/crear', [HerramientaController::class, 'crearModelo'])->name('modelos.crear');
+    Route::post('/modelos/{id}/actualizar', [HerramientaController::class, 'actualizarModelo'])->name('modelos.actualizar');
+    Route::post('/modelos/{id}/baja', [HerramientaController::class, 'bajaModelo'])->name('modelos.baja');
+
+    Route::post('/crear', [HerramientaController::class, 'crearItem'])->name('crear');
+    Route::post('/{id}/actualizar', [HerramientaController::class, 'actualizarItem'])->name('actualizar');
+    Route::post('/{id}/baja', [HerramientaController::class, 'bajaItem'])->name('baja');
+});
+
+/*
+|--------------------------------------------------------------------------
+| MATERIALES (SEPARADO)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('materiales')->name('materiales.')->group(function () {
+    Route::get('/', [MaterialController::class, 'index'])->name('index');
+    Route::get('/familias', [MaterialController::class, 'indexFamilias'])->name('familias.index');
+    Route::get('/marcas', [MaterialController::class, 'indexMarcas'])->name('marcas.index');
+    Route::get('/modelos', [MaterialController::class, 'indexModelos'])->name('modelos.index');
+
+    Route::get('/api/familias', [MaterialController::class, 'familias'])->name('api.familias');
+    Route::get('/api/marcas', [MaterialController::class, 'marcas'])->name('api.marcas');
+    Route::get('/api/modelos', [MaterialController::class, 'modelos'])->name('api.modelos');
+
+    Route::post('/familias/crear', [MaterialController::class, 'crearFamilia'])->name('familias.crear');
+    Route::post('/familias/{id}/actualizar', [MaterialController::class, 'actualizarFamilia'])->name('familias.actualizar');
+    Route::post('/familias/{id}/baja', [MaterialController::class, 'bajaFamilia'])->name('familias.baja');
+    Route::post('/marcas/crear', [MaterialController::class, 'crearMarca'])->name('marcas.crear');
+    Route::post('/marcas/{id}/actualizar', [MaterialController::class, 'actualizarMarca'])->name('marcas.actualizar');
+    Route::post('/marcas/{id}/baja', [MaterialController::class, 'bajaMarca'])->name('marcas.baja');
+    Route::post('/modelos/crear', [MaterialController::class, 'crearModelo'])->name('modelos.crear');
+    Route::post('/modelos/{id}/actualizar', [MaterialController::class, 'actualizarModelo'])->name('modelos.actualizar');
+    Route::post('/modelos/{id}/baja', [MaterialController::class, 'bajaModelo'])->name('modelos.baja');
+
+    Route::post('/crear', [MaterialController::class, 'crearItem'])->name('crear');
+    Route::post('/{id}/actualizar', [MaterialController::class, 'actualizarItem'])->name('actualizar');
+    Route::post('/{id}/baja', [MaterialController::class, 'bajaItem'])->name('baja');
 });
 
 });
