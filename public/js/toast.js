@@ -5,6 +5,23 @@
 (function() {
     'use strict';
 
+    if (!window.AppLogger) {
+        window.AppLogger = {
+            view: function(nombreVista) {
+                console.log('[APP][VISTA] ' + (nombreVista || 'Sin nombre'));
+            },
+            success: function(mensaje) {
+                console.log('[APP][OK] ' + (mensaje || 'Operacion exitosa'));
+            },
+            error: function(mensaje) {
+                console.error('[APP][ERROR] ' + (mensaje || 'Error'));
+            },
+            info: function(mensaje) {
+                console.log('[APP][INFO] ' + (mensaje || 'Info'));
+            }
+        };
+    }
+
     // Crear contenedor de toasts
     function crearContenedorToast() {
         if (document.getElementById('toast-container')) return;
@@ -26,6 +43,16 @@
         toast.textContent = mensaje;
         
         document.getElementById('toast-container').appendChild(toast);
+
+        if (window.AppLogger) {
+            if (tipo === 'error') {
+                window.AppLogger.error(mensaje);
+            } else if (tipo === 'success') {
+                window.AppLogger.success(mensaje);
+            } else {
+                window.AppLogger.info(mensaje);
+            }
+        }
         
         // Eliminar después de la animación (3.5 segundos)
         setTimeout(function() {
@@ -93,10 +120,10 @@
                         '<textarea id="modal-confirmacion-observacion" placeholder="Ingrese el motivo..."></textarea>' +
                     '</div>' +
                     '<div class="modal-confirmacion-botones">' +
-                        '<button type="button" class="btn btn-cancelar" id="modal-confirmacion-cancelar" aria-keyshortcuts="Alt+N" title="No (Alt+N)">' +
-                            '<span class="modal-btn-accesskey-word">NO</span></button>' +
-                        '<button type="button" class="btn btn-confirmar" id="modal-confirmacion-confirmar" aria-keyshortcuts="Alt+S" title="Sí (Alt+S)">' +
-                            '<span class="modal-btn-accesskey-word">SÍ</span></button>' +
+                        '<button type="button" class="btn btn-cancelar" id="modal-confirmacion-cancelar" aria-keyshortcuts="Alt+C" title="Cancelar (Alt+C)">' +
+                            '<span class="modal-btn-accesskey-word">Cancelar</span></button>' +
+                        '<button type="button" class="btn btn-confirmar" id="modal-confirmacion-confirmar" aria-keyshortcuts="Alt+G" title="Guardar (Alt+G)">' +
+                            '<span class="modal-btn-accesskey-word">Guardar</span></button>' +
                     '</div>' +
                 '</div>';
 
@@ -122,12 +149,16 @@
                 if (!overlay || !overlay.classList.contains('activo')) return;
 
                 var ch = getConfirmCharFromKeyEvent(e);
-                if (ch !== 'n' && ch !== 's') return;
+                var mode = overlay.getAttribute('data-confirm-mode') || 'save-cancel';
+                var isYesNo = mode === 'yes-no';
+                var cancelKey = isYesNo ? 'n' : 'c';
+                var confirmKey = isYesNo ? 's' : 'g';
+                if (ch !== cancelKey && ch !== confirmKey) return;
 
                 e.preventDefault();
                 e.stopPropagation();
 
-                if (ch === 'n') {
+                if (ch === cancelKey) {
                     cerrarModalConfirmacion();
                     return;
                 }
@@ -164,12 +195,45 @@ window.abrirModalConfirmacion = function(titulo, mensaje, callback, requireObser
             esPeligro = false;
         }
 
+        var mensajeSeguro = mensaje == null ? '' : String(mensaje);
         document.getElementById('modal-confirmacion-titulo').textContent = titulo;
-        document.getElementById('modal-confirmacion-mensaje').textContent = mensaje;
+        document.getElementById('modal-confirmacion-mensaje').textContent = mensajeSeguro;
 
         var obsDiv = document.querySelector('.modal-confirmacion-observacion');
         var confirmarBtn = document.getElementById('modal-confirmacion-confirmar');
         var textarea = document.getElementById('modal-confirmacion-observacion');
+
+        var btnCancelar = document.getElementById('modal-confirmacion-cancelar');
+        var btnConfirmar = document.getElementById('modal-confirmacion-confirmar');
+        var lblCancelar = btnCancelar ? btnCancelar.querySelector('.modal-btn-accesskey-word') : null;
+        var lblConfirmar = btnConfirmar ? btnConfirmar.querySelector('.modal-btn-accesskey-word') : null;
+        var usarSiNo = /¿\s*desea\s+continuar\?/i.test(mensajeSeguro);
+
+        if (usarSiNo) {
+            overlay.setAttribute('data-confirm-mode', 'yes-no');
+            if (btnCancelar) {
+                btnCancelar.setAttribute('aria-keyshortcuts', 'Alt+N');
+                btnCancelar.setAttribute('title', 'No (Alt+N)');
+            }
+            if (btnConfirmar) {
+                btnConfirmar.setAttribute('aria-keyshortcuts', 'Alt+S');
+                btnConfirmar.setAttribute('title', 'Sí (Alt+S)');
+            }
+            if (lblCancelar) lblCancelar.textContent = 'No';
+            if (lblConfirmar) lblConfirmar.textContent = 'Sí';
+        } else {
+            overlay.setAttribute('data-confirm-mode', 'save-cancel');
+            if (btnCancelar) {
+                btnCancelar.setAttribute('aria-keyshortcuts', 'Alt+C');
+                btnCancelar.setAttribute('title', 'Cancelar (Alt+C)');
+            }
+            if (btnConfirmar) {
+                btnConfirmar.setAttribute('aria-keyshortcuts', 'Alt+G');
+                btnConfirmar.setAttribute('title', 'Guardar (Alt+G)');
+            }
+            if (lblCancelar) lblCancelar.textContent = 'Cancelar';
+            if (lblConfirmar) lblConfirmar.textContent = 'Guardar';
+        }
 
         overlay.classList.toggle('modal-confirmacion--peligro', !!esPeligro);
 
@@ -232,8 +296,7 @@ window.abrirModalConfirmacion = function(titulo, mensaje, callback, requireObser
         }
     });
 
-    // Inicializar
-    crearContenedorToast();
-    crearModalConfirmacion();
+    // Inicialización diferida: reduce HTML visible en Elements
+    // Los nodos se crean recién cuando se usan.
 
 })();

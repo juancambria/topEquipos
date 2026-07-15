@@ -57,7 +57,7 @@
             sectorHasChanges = false;
             sectorEditMode = false;
             sectorSubmitting = false;
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
             submitBtn.classList.remove('disabled');
         }
 
@@ -68,7 +68,7 @@
         async function guardarSector() {
             sectorSubmitting = true;
             submitBtn.disabled = true;
-            submitBtn.textContent = sectorEditMode ? 'Actualizando...' : 'Creando...';
+            submitBtn.textContent = 'Guardar';
 
             try {
                 var formData = new FormData(form);
@@ -115,7 +115,7 @@
                 mostrarToast('Error al guardar el sector', 'error');
             } finally {
                 sectorSubmitting = false;
-                submitBtn.textContent = sectorEditMode ? 'Actualizar' : 'Crear';
+                submitBtn.textContent = 'Guardar';
                 actualizarEstadoSubmit();
             }
         }
@@ -130,12 +130,12 @@
                 titulo.textContent = 'Editar Sector';
                 form.action = '/sectores/' + id + '/actualizar';
                 inputNombre.value = sectorOriginalNombre;
-                submitBtn.textContent = 'Actualizar';
+                submitBtn.textContent = 'Guardar';
             } else {
                 titulo.textContent = 'Nuevo Sector';
                 form.action = '/sectores/crear';
                 inputNombre.value = '';
-                submitBtn.textContent = 'Crear';
+                submitBtn.textContent = 'Guardar';
             }
 
             actualizarEstadoSubmit();

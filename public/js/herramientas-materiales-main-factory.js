@@ -8,6 +8,21 @@
     function page() { return c.$(config.pageId); }
     var state = { selectedRow: null, editId: null, initial: '{}', touched: false, mode: 'create' };
 
+    function syncStockPanelLayout(showPanel) {
+      var modal = c.$(config.modalId);
+      if (!modal) return;
+      modal.classList.toggle('hm-modal-stock-active', !!showPanel);
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function updateSubmit() {
       var btn = c.$(config.saveButtonId);
       var form = c.$(config.formId);
@@ -28,6 +43,15 @@
       c.fillSelect(c.$(config.familyField), data.data, '— Seleccionar familia —', selected);
     }
 
+    async function cargarTipificaciones(familiaId, selected) {
+      var target = c.$(config.tipificationField);
+      if (!target || !page().dataset.apiTipificaciones) return;
+      var u = new URL(page().dataset.apiTipificaciones, window.location.origin);
+      if (familiaId) u.searchParams.set(config.familyParam, familiaId);
+      var data = await c.fetchJson(u.toString());
+      c.fillSelect(target, data.data, '— Seleccionar —', selected);
+    }
+
     async function cargarMarcas(familiaId, selected) {
       var u = new URL(page().dataset.apiMarcas, window.location.origin);
       if (familiaId) u.searchParams.set(config.familyParam, familiaId);
@@ -41,6 +65,44 @@
       if (marcaId) u.searchParams.set(config.brandParam, marcaId);
       var data = await c.fetchJson(u.toString());
       c.fillSelect(c.$(config.modelField), data.data, '— Seleccionar modelo —', selected);
+    }
+
+    async function cargarMovimientosStock(itemId) {
+      var panel = c.$(config.stockPanelId || '');
+      var list = c.$(config.stockInfoListId || '');
+      if (!panel || !list || !page().dataset.movimientosStockBase || !itemId) {
+        if (panel) panel.hidden = true;
+        return;
+      }
+
+      panel.hidden = false;
+      list.innerHTML = '<p class="hm-stock-panel-empty">Cargando información de stock...</p>';
+
+      try {
+        var url = page().dataset.movimientosStockBase.replace(/\/$/, '') + '/' + itemId + '/movimientos-stock';
+        var data = await c.fetchJson(url);
+        var rows = Array.isArray(data.data) ? data.data : [];
+        if (!rows.length) {
+          list.innerHTML = '<p class="hm-stock-panel-empty">Sin movimientos registrados.</p>';
+          return;
+        }
+
+        list.innerHTML = rows.map(function(row) {
+          return ''
+            + '<section class="equipo-panel-factura hm-stock-card">'
+            + '  <h3 class="equipo-panel-factura-titulo">' + escapeHtml(row.titulo || 'Datos') + '</h3>'
+            + '  <dl class="equipo-panel-factura-dl">'
+            + '    <div class="equipo-panel-factura-fila"><dt>Fecha</dt><dd>' + escapeHtml(row.fecha || '—') + '</dd></div>'
+            + '    <div class="equipo-panel-factura-fila"><dt>Proveedor</dt><dd>' + escapeHtml(row.proveedor || 'Sin proveedor') + '</dd></div>'
+            + '    <div class="equipo-panel-factura-fila"><dt>N° factura</dt><dd>' + escapeHtml(row.factura || 'Sin numero de factura') + '</dd></div>'
+            + '    <div class="equipo-panel-factura-fila"><dt>Precio</dt><dd>' + escapeHtml(row.precio || 'Sin precio') + '</dd></div>'
+            + '    <div class="equipo-panel-factura-fila"><dt>Unidades</dt><dd>' + escapeHtml(row.unidades || '0') + '</dd></div>'
+            + '  </dl>'
+            + '</section>';
+        }).join('');
+      } catch (err) {
+        list.innerHTML = '<p class="hm-stock-panel-empty">' + String(err.message || 'No se pudo cargar el historial de stock.') + '</p>';
+      }
     }
 
     function selectRow(row) {
@@ -68,19 +130,25 @@
         state.editId = Number(row.dataset.id);
         c.$(config.modalTitleId).textContent = config.editModalTitle;
         form.action = page().dataset.actualizarBase.replace(/\/$/, '') + '/' + state.editId + '/actualizar';
-        c.$(config.descriptionField).value = row.dataset.descripcion || '';
         if (config.stockField) c.$(config.stockField).value = row.dataset.stock || '';
         await cargarFamilias(row.dataset.familiaId || '');
+        await cargarTipificaciones(c.$(config.familyField).value, row.dataset.tipificacionId || '');
         await cargarMarcas(c.$(config.familyField).value, row.dataset.marcaId || '');
         await cargarModelos(c.$(config.familyField).value, c.$(config.brandField).value, row.dataset.modeloId || '');
+        syncStockPanelLayout(true);
+        await cargarMovimientosStock(state.editId);
       } else {
         state.mode = 'create';
         c.$(config.modalTitleId).textContent = config.createModalTitle;
         form.action = page().dataset.crearItem;
         await cargarFamilias('');
+        await cargarTipificaciones('', '');
         c.fillSelect(c.$(config.brandField), [], '— Seleccionar marca —', '');
         c.fillSelect(c.$(config.modelField), [], '— Seleccionar modelo —', '');
         if (config.stockField) c.$(config.stockField).value = '';
+        syncStockPanelLayout(false);
+        if (c.$(config.stockPanelId || '')) c.$(config.stockPanelId).hidden = true;
+        if (c.$(config.stockInfoListId || '')) c.$(config.stockInfoListId).innerHTML = '<p class="hm-stock-panel-empty">Sin movimientos registrados.</p>';
       }
 
       state.initial = c.formSnapshot(form);
@@ -114,8 +182,35 @@
           });
           if (creada?.id) {
             await cargarFamilias(creada.id);
+            await cargarTipificaciones(c.$(config.familyField).value, '');
             await cargarMarcas(c.$(config.familyField).value, '');
             c.fillSelect(c.$(config.modelField), [], '— Seleccionar modelo —', '');
+            state.touched = true;
+            updateSubmit();
+          }
+        });
+      }
+
+      if (config.quickButtons.tipification) {
+        c.$(config.quickButtons.tipification)?.addEventListener('click', async function() {
+          if (!c.requireSelect(c.$(config.familyField))) return;
+          var creada = await c.createQuickEntity({
+            modalId: config.quickModalIds.tipification,
+            title: 'Nueva Tipificación',
+            bodyHtml: '<div class="form-grupo"><label for="' + config.quickInputIds.tipification + '">Nombre</label><input type="text" id="' + config.quickInputIds.tipification + '" maxlength="120" required></div>',
+            confirmTitle: 'Crear tipificación',
+            confirmMessage: 'Crear tipificación. ¿Desea continuar?',
+            successMessage: 'Tipificación creada correctamente',
+            url: page().dataset.crearTipificacion,
+            onBeforeOpen: function() { c.$(config.quickInputIds.tipification).value = ''; },
+            buildPayload: function() {
+              var p = { nombre: c.$(config.quickInputIds.tipification).value };
+              p[config.familyParam] = c.$(config.familyField).value;
+              return p;
+            },
+          });
+          if (creada?.id) {
+            await cargarTipificaciones(c.$(config.familyField).value, creada.id);
             state.touched = true;
             updateSubmit();
           }
@@ -188,6 +283,7 @@
 
       c.$(config.familyField).addEventListener('change', async function() {
         try {
+          await cargarTipificaciones(this.value, '');
           await cargarMarcas(this.value, '');
           c.fillSelect(c.$(config.modelField), [], '— Seleccionar modelo —', '');
           updateSubmit();

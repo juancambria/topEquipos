@@ -254,12 +254,12 @@ window.cerrarModalMarca = function() {
         if (mode === 'crear') {
             titulo.textContent = 'Nueva Marca';
             form.reset();
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
             window.__modalEntidadState.marca = { editMode: false, hasChanges: false, original: {}, saving: false };
         } else {
             titulo.textContent = 'Editar Marca';
             if (inputMarca) inputMarca.value = marca || '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
             window.__modalEntidadState.marca = { editMode: true, hasChanges: false, original: { marca: marca || '' }, saving: false };
         }
         actualizarDirtyMarcaEquipo();
@@ -309,7 +309,7 @@ window.cerrarModalMarca = function() {
             cargarTiposEnSelectModelo(idMarcaActual || '', idTipoActual || '');
             cargarMarcasEnSelectModelo(idTipoActual || '', idMarcaActual || '');
             if (inputModelo) inputModelo.value = '';
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
             window.__modalEntidadState.modelo = {
                 editMode: false,
                 hasChanges: false,
@@ -325,7 +325,7 @@ window.cerrarModalMarca = function() {
             cargarTiposEnSelectModelo(idMarca || '', idTipo || '');
             cargarMarcasEnSelectModelo(idTipo || '', idMarca || '');
             if (inputModelo) inputModelo.value = modelo || '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
             window.__modalEntidadState.modelo = {
                 editMode: true,
                 hasChanges: false,
@@ -482,11 +482,11 @@ window.cerrarModalMarca = function() {
             titulo.textContent = 'Nueva Ubicación';
             form.reset();
             if (document.getElementById('ubicacionCodigo')) document.getElementById('ubicacionCodigo').value = '';
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
         } else {
             titulo.textContent = 'Editar Ubicación';
             if (inputNombre) inputNombre.value = nombre || '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
         }
         
         modal.setAttribute('aria-hidden', 'false');
@@ -529,7 +529,7 @@ window.cerrarModalMarca = function() {
             form.reset();
             // Cargar dropdown de ubicaciones vía AJAX
             cargarUbicacionesEnSelectSector();
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
         } else {
             titulo.textContent = 'Editar Sector';
             // Cargar dropdown de ubicaciones vía AJAX
@@ -538,7 +538,7 @@ window.cerrarModalMarca = function() {
             setTimeout(function() {
                 if (selectUbicacion) selectUbicacion.value = String(ubicacionId || '');
             }, 100);
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
         }
         
         modal.setAttribute('aria-hidden', 'false');
@@ -577,12 +577,12 @@ window.cerrarModalMarca = function() {
         if (mode === 'crear') {
             titulo.textContent = 'Nuevo Tipo';
             form.reset();
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
             window.__modalEntidadState.tipo = { editMode: false, hasChanges: false, original: {}, saving: false };
         } else {
             titulo.textContent = 'Editar Tipo';
             if (inputNombre) inputNombre.value = nombre || '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
             window.__modalEntidadState.tipo = { editMode: true, hasChanges: false, original: { nombre: nombre || '' }, saving: false };
         }
         actualizarDirtyTipoEquipo();
@@ -933,8 +933,8 @@ window.cerrarModalMarca = function() {
     function formatPrecioPanelEquipo(v) {
         if (v === '' || v == null) return '—';
         var n = Number(String(v).replace(',', '.'));
-        if (!isFinite(n)) return String(v);
-        return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (!isFinite(n)) return '$ ' + String(v);
+        return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     var equipoPanelFacturaProveedorId = '';
@@ -1015,6 +1015,45 @@ window.cerrarModalMarca = function() {
         };
     }
 
+    function normalizeAtributosEquipoJson(raw) {
+        var parsed = parseJsonObjectSafe(raw);
+        var normalized = {};
+        Object.keys(parsed).sort().forEach(function(key) {
+            var cleanKey = String(key || '').trim();
+            if (!cleanKey) return;
+            var value = parsed[key];
+            var cleanValue = value == null ? '' : String(value).trim();
+            if (cleanValue) {
+                normalized[cleanKey] = cleanValue;
+            }
+        });
+        return JSON.stringify(normalized);
+    }
+
+    function normalizePrecioEquipo(raw) {
+        var value = String(raw || '').trim();
+        if (!value) return '';
+        var normalized = Number(value.replace(',', '.'));
+        if (!isFinite(normalized)) return value;
+        return String(normalized);
+    }
+
+    function normalizeEstadoEquipoValue(key, value) {
+        if (key === 'atributosJson') {
+            return normalizeAtributosEquipoJson(value);
+        }
+        if (key === 'precio') {
+            return normalizePrecioEquipo(value);
+        }
+        if (key === 'informaSeguro') {
+            return String(value) === '1' ? '1' : '0';
+        }
+        if (key === 'serie' || key === 'observacion' || key === 'vtoGarantia') {
+            return String(value || '').trim();
+        }
+        return String(value || '');
+    }
+
     function tieneDatosCargaEquipo(actual) {
         return Boolean(
             (actual.serie || '').trim() ||
@@ -1043,7 +1082,7 @@ window.cerrarModalMarca = function() {
         }
 
         equipoHasChanges = Object.keys(equipoOriginalValues).some(function(key) {
-            return (actual[key] || '') !== (equipoOriginalValues[key] || '');
+            return normalizeEstadoEquipoValue(key, actual[key]) !== normalizeEstadoEquipoValue(key, equipoOriginalValues[key]);
         });
         submitBtn.disabled = !equipoHasChanges;
         submitBtn.classList.toggle('disabled', !equipoHasChanges);
@@ -1118,6 +1157,27 @@ form.addEventListener('submit', async function(e) {
                         manejarSerieExistente(serieInput);
                         return;
                     }
+                }
+            }
+
+            if (form.action.endsWith('/crear')) {
+                var precioInput = getEl('equipoPrecio');
+                var precioRaw = String(precioInput?.value || '').trim();
+                if (precioRaw === '') {
+                    toast('Ingresá un precio mayor a $ 0,00', 'warning');
+                    if (precioInput) {
+                        precioInput.focus();
+                    }
+                    return;
+                }
+                var precioValue = Number(precioRaw.replace(',', '.'));
+                if (!isFinite(precioValue) || precioValue <= 0) {
+                    toast('El precio del equipo debe ser mayor a $ 0,00', 'warning');
+                    if (precioInput) {
+                        precioInput.focus();
+                        precioInput.select();
+                    }
+                    return;
                 }
             }
 
@@ -1467,9 +1527,49 @@ function setGarantiaEquipo(baseIso, vtoIso) {
     // Click en preview para abrir selector de archivos
     if (previewImagen) {
         previewImagen.addEventListener('click', function() {
+            var hasImage = previewImagen.classList.contains('has-image') && previewImgTag && previewImgTag.src;
+            if (hasImage) {
+                var zoomModal = getEl('modalImagenEquipo');
+                var zoomImg = getEl('modalImagenEquipoImg');
+                if (!zoomModal || !zoomImg) return;
+                zoomImg.src = previewImgTag.src;
+                zoomModal.classList.add('show');
+                zoomModal.setAttribute('aria-hidden', 'false');
+                return;
+            }
             imagenInput.click();
         });
     }
+
+    (function bindModalImagenEquipo() {
+        var zoomModal = getEl('modalImagenEquipo');
+        var zoomImg = getEl('modalImagenEquipoImg');
+        if (!zoomModal || zoomModal.dataset.bound === '1') return;
+        zoomModal.dataset.bound = '1';
+
+        function cerrarZoom() {
+            zoomModal.classList.remove('show');
+            zoomModal.setAttribute('aria-hidden', 'true');
+            if (zoomImg) zoomImg.src = '';
+        }
+
+        var btnCerrar = getEl('modalImagenEquipoCerrar');
+        if (btnCerrar) {
+            btnCerrar.addEventListener('click', cerrarZoom);
+        }
+
+        zoomModal.addEventListener('click', function(e) {
+            if (e.target === zoomModal) {
+                cerrarZoom();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && zoomModal.classList.contains('show')) {
+                cerrarZoom();
+            }
+        });
+    })();
 
     window.abrirModalEquipo = function(mode, element) {
         if (!overlay || !form || !titulo || !submitBtn) {
@@ -1519,7 +1619,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
             previewPlaceholder.style.display = 'block';
             btnEliminarImagen.style.display = 'none';
             imagenActualInput.value = '';
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
             equipoOriginalValues = {};
             equipoHasChanges = false;
             equipoEditMode = false;
@@ -1588,7 +1688,7 @@ function setGarantiaEquipo(baseIso, vtoIso) {
                 imagenActualInput.value = '';
             }
             imagenInput.value = '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
             equipoOriginalValues = {
                 serie: dataset.serie || '',
                 observacion: dataset.observacion || '',
@@ -2332,11 +2432,16 @@ btnBajaEquipo.addEventListener('click', function() {
         }
 
         function fill(sectores) {
+            var sectoresOrdenados = (Array.isArray(sectores) ? sectores.slice() : []).sort(function(a, b) {
+                var nombreA = String(a?.nombre || a?.nombreSector || '').toLocaleLowerCase('es');
+                var nombreB = String(b?.nombre || b?.nombreSector || '').toLocaleLowerCase('es');
+                return nombreA.localeCompare(nombreB, 'es');
+            });
             selects.forEach(function(select) {
                 if (!select) return;
                 var selectedValue = select.value;
                 select.innerHTML = '<option value="">— Sin especificar —</option>';
-                sectores.forEach(function(sector) {
+                sectoresOrdenados.forEach(function(sector) {
                     var option = document.createElement('option');
                     option.value = sector.idSector || sector.id || '';
                     option.textContent = sector.nombre || sector.nombreSector || '';

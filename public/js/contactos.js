@@ -109,13 +109,13 @@
 
                 try {
                     const formData = new FormData(form);
-                    
+
                     // Debug: log the form data
                     console.log('Form data being sent:');
                     for (let [key, value] of formData.entries()) {
                         console.log(`${key}: ${value}`);
                     }
-                    
+
                     const response = await fetch(form.action, {
                         method: 'POST',
                         body: formData,

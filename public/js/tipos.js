@@ -45,7 +45,7 @@
     async function ejecutarSubmitTipo() {
         tipoIsSubmitting = true;
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Guardando...';
+        submitBtn.textContent = 'Guardar';
         
         try {
             const formData = new FormData(form);
@@ -88,7 +88,7 @@
         } finally {
             tipoIsSubmitting = false;
             submitBtn.disabled = false;
-            submitBtn.textContent = form.action.includes('/crear') ? 'Crear' : 'Actualizar';
+            submitBtn.textContent = 'Guardar';
         }
     }
 
@@ -117,7 +117,7 @@
             titulo.textContent = 'Nuevo Tipo';
             form.action = '/tipos/crear';
             inputNombre.value = '';
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
             tipoOriginalNombre = '';
             tipoHasChanges = false;
             tipoEditMode = false;
@@ -125,7 +125,7 @@
             titulo.textContent = 'Editar Tipo';
             form.action = '/tipos/' + id + '/actualizar';
             inputNombre.value = nombre || '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
             tipoOriginalNombre = nombre || '';
             tipoHasChanges = false;
             tipoEditMode = true;

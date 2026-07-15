@@ -23,7 +23,7 @@
             </table>
         </div>
         <div class="modal-sector-footer">
-            <button type="button" class="btn btn-secundario" onclick="cerrarModalSectores()">Cerrar</button>
+            <button type="button" class="btn btn-secundario" onclick="cerrarModalSectores()">Cancelar</button>
         </div>
     </div>
 </div>

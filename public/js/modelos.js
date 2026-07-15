@@ -58,7 +58,7 @@
     async function ejecutarSubmitModelo() {
         modeloIsSubmitting = true;
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Guardando...';
+        submitBtn.textContent = 'Guardar';
         
         try {
             const formData = new FormData(form);
@@ -98,7 +98,7 @@
         } finally {
             modeloIsSubmitting = false;
             submitBtn.disabled = false;
-            submitBtn.textContent = form.action.includes('/crear') ? 'Crear' : 'Actualizar';
+            submitBtn.textContent = 'Guardar';
         }
     }
 
@@ -191,7 +191,7 @@
             // Cargar listas completas inicialmente
             cargarTiposPorMarca('', '');
             cargarMarcasPorTipo('', '');
-            if (submitBtn) submitBtn.textContent = 'Crear';
+            if (submitBtn) submitBtn.textContent = 'Guardar';
             modeloOriginalValues = {
                 modelo: '',
                 idMarca: '',
@@ -205,7 +205,7 @@
             if (inputModelo) inputModelo.value = modelo || '';
             cargarTiposPorMarca(idMarca || '', idTipo || '');
             cargarMarcasPorTipo(idTipo || '', idMarca || '');
-            if (submitBtn) submitBtn.textContent = 'Actualizar';
+            if (submitBtn) submitBtn.textContent = 'Guardar';
             modeloOriginalValues = {
                 modelo: modelo || '',
                 idMarca: String(idMarca || ''),

@@ -18,6 +18,9 @@ use App\Http\Controllers\GestionEquipoSectorController;
 use App\Http\Controllers\AtributoTipoEquipoController;
 use App\Http\Controllers\HerramientaController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\PersonaTecnicoController;
+use App\Http\Controllers\IncidenciaController;
+use App\Http\Controllers\ParteTrabajoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,7 +54,10 @@ Route::get('/tipos/api', [TipoController::class, 'apiIndex'])->name('tipos.api')
 
 // Ubicaciones API
 Route::get('/ubicaciones/api', function() {
-    $ubicaciones = \App\Models\Ubicacion::where('estado', 'activo')->orderBy('nombre')->get(['id', 'codigo', 'nombre']);
+    $ubicaciones = \App\Models\Ubicacion::where('estado', 'activo')
+        ->orderBy('codigo')
+        ->orderBy('nombre')
+        ->get(['id', 'codigo', 'nombre']);
     return response()->json($ubicaciones);
 });
 
@@ -296,16 +302,22 @@ Route::prefix('herramientas')->name('herramientas.')->group(function () {
 Route::prefix('materiales')->name('materiales.')->group(function () {
     Route::get('/', [MaterialController::class, 'index'])->name('index');
     Route::get('/familias', [MaterialController::class, 'indexFamilias'])->name('familias.index');
+    Route::get('/tipificaciones', [MaterialController::class, 'indexTipificaciones'])->name('tipificaciones.index');
     Route::get('/marcas', [MaterialController::class, 'indexMarcas'])->name('marcas.index');
     Route::get('/modelos', [MaterialController::class, 'indexModelos'])->name('modelos.index');
 
     Route::get('/api/familias', [MaterialController::class, 'familias'])->name('api.familias');
+    Route::get('/api/tipificaciones', [MaterialController::class, 'tipificaciones'])->name('api.tipificaciones');
     Route::get('/api/marcas', [MaterialController::class, 'marcas'])->name('api.marcas');
     Route::get('/api/modelos', [MaterialController::class, 'modelos'])->name('api.modelos');
+    Route::get('/{id}/movimientos-stock', [MaterialController::class, 'movimientosStock'])->name('movimientosStock');
 
     Route::post('/familias/crear', [MaterialController::class, 'crearFamilia'])->name('familias.crear');
+    Route::post('/tipificaciones/crear', [MaterialController::class, 'crearTipificacion'])->name('tipificaciones.crear');
     Route::post('/familias/{id}/actualizar', [MaterialController::class, 'actualizarFamilia'])->name('familias.actualizar');
     Route::post('/familias/{id}/baja', [MaterialController::class, 'bajaFamilia'])->name('familias.baja');
+    Route::post('/tipificaciones/{id}/actualizar', [MaterialController::class, 'actualizarTipificacion'])->name('tipificaciones.actualizar');
+    Route::post('/tipificaciones/{id}/baja', [MaterialController::class, 'bajaTipificacion'])->name('tipificaciones.baja');
     Route::post('/marcas/crear', [MaterialController::class, 'crearMarca'])->name('marcas.crear');
     Route::post('/marcas/{id}/actualizar', [MaterialController::class, 'actualizarMarca'])->name('marcas.actualizar');
     Route::post('/marcas/{id}/baja', [MaterialController::class, 'bajaMarca'])->name('marcas.baja');
@@ -316,6 +328,38 @@ Route::prefix('materiales')->name('materiales.')->group(function () {
     Route::post('/crear', [MaterialController::class, 'crearItem'])->name('crear');
     Route::post('/{id}/actualizar', [MaterialController::class, 'actualizarItem'])->name('actualizar');
     Route::post('/{id}/baja', [MaterialController::class, 'bajaItem'])->name('baja');
+});
+
+/*
+|--------------------------------------------------------------------------
+| OPERACIONES — TÉCNICOS, INCIDENCIAS, PARTES DE TRABAJO
+|--------------------------------------------------------------------------
+*/
+Route::prefix('personas-tecnicos')->name('personasTecnicos.')->group(function () {
+    Route::get('/', [PersonaTecnicoController::class, 'index'])->name('index');
+    Route::get('/api', [PersonaTecnicoController::class, 'apiIndex'])->name('api');
+    Route::post('/crear', [PersonaTecnicoController::class, 'crear'])->name('crear');
+    Route::post('/{id}/actualizar', [PersonaTecnicoController::class, 'actualizar'])->name('actualizar');
+    Route::post('/{id}/baja', [PersonaTecnicoController::class, 'baja'])->name('baja');
+});
+
+Route::prefix('incidencias')->name('incidencias.')->group(function () {
+    Route::get('/', [IncidenciaController::class, 'index'])->name('index');
+    Route::get('/api/calendario', [IncidenciaController::class, 'apiCalendario'])->name('api.calendario');
+    Route::get('/{id}', [IncidenciaController::class, 'show'])->whereNumber('id')->name('show');
+    Route::post('/crear', [IncidenciaController::class, 'crear'])->name('crear');
+    Route::post('/{id}/actualizar', [IncidenciaController::class, 'actualizar'])->whereNumber('id')->name('actualizar');
+    Route::post('/{id}/baja', [IncidenciaController::class, 'baja'])->whereNumber('id')->name('baja');
+});
+
+Route::prefix('partes-trabajo')->name('partesTrabajo.')->group(function () {
+    Route::get('/', [ParteTrabajoController::class, 'index'])->name('index');
+    Route::get('/api/equipos', [ParteTrabajoController::class, 'apiEquipos'])->name('api.equipos');
+    Route::get('/api/calendario', [ParteTrabajoController::class, 'apiCalendario'])->name('api.calendario');
+    Route::get('/{id}', [ParteTrabajoController::class, 'show'])->whereNumber('id')->name('show');
+    Route::post('/crear', [ParteTrabajoController::class, 'crear'])->name('crear');
+    Route::post('/{id}/actualizar', [ParteTrabajoController::class, 'actualizar'])->whereNumber('id')->name('actualizar');
+    Route::post('/{id}/baja', [ParteTrabajoController::class, 'baja'])->whereNumber('id')->name('baja');
 });
 
 });

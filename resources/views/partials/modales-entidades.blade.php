@@ -21,7 +21,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalMarca()">Cancelar</button>
-                <button type="submit" id="modalMarcaSubmit" class="btn btn-primario">Crear</button>
+                <button type="submit" id="modalMarcaSubmit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>
@@ -81,7 +81,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalModelo()">Cancelar</button>
-                <button type="submit" id="modalModeloSubmit" class="btn btn-primario">Crear</button>
+                <button type="submit" id="modalModeloSubmit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>
@@ -104,7 +104,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalTipo()">Cancelar</button>
-                <button type="submit" id="modalTipoSubmit" class="btn btn-primario">Crear</button>
+                <button type="submit" id="modalTipoSubmit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>
@@ -151,7 +151,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalUbicacion()">Cancelar</button>
-                <button type="submit" id="modalUbicacionSubmit" class="btn btn-primario">Crear</button>
+                <button type="submit" id="modalUbicacionSubmit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>
@@ -174,7 +174,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalSector()">Cancelar</button>
-                <button type="submit" id="modalSectorSubmit" class="btn btn-primario">Crear</button>
+                <button type="submit" id="modalSectorSubmit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>

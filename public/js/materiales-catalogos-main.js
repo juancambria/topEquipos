@@ -34,6 +34,22 @@ createHMCatalogos({
         quickFamilyIds: { modalId: 'modalMaterialQuickFamilia', inputId: 'materialQuickFamiliaNombre' },
       },
     },
+    tipificaciones: {
+      pageId: 'materialesTipificacionesPage',
+      rowSelector: '#tablaMaterialesTipificaciones tbody tr[data-id]',
+      selectedInfoId: 'selectedMaterialTipificacionInfo',
+      buttons: {
+        create: 'btnMaterialTipificacionCrear',
+        edit: 'btnMaterialTipificacionEditar',
+        delete: 'btnMaterialTipificacionEliminar',
+      },
+      modal: {
+        id: 'modalMaterialTipificacionCrud',
+        fields: { id: 'materialTipificacionCrudId', family: 'materialTipificacionCrudFamilia', name: 'materialTipificacionCrudNombre' },
+        buttons: { quickFamily: 'btnMaterialTipificacionNuevaFamilia' },
+        quickFamilyIds: { modalId: 'modalMaterialQuickFamilia', inputId: 'materialQuickFamiliaNombre' },
+      },
+    },
     modelos: {
       pageId: 'materialesModelosPage',
       rowSelector: '#tablaMaterialesModelos tbody tr[data-id]',

@@ -20,3 +20,92 @@
 .hm-modal {
     max-width: 560px;
 }
+
+.hm-modal-stock {
+    max-width: 560px;
+}
+
+.hm-modal-stock-shell {
+    display: block;
+}
+
+.hm-modal-stock-body {
+    display: block;
+    margin-bottom: 18px;
+}
+
+.hm-modal-stock-active .hm-modal-stock {
+    max-width: 1040px;
+}
+
+.hm-modal-stock-active .hm-modal-stock-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: start;
+}
+
+.hm-modal-stock-form {
+    min-width: 0;
+}
+
+.hm-modal-stock-active .hm-modal-stock-form {
+    padding-right: 24px;
+    border-right: 1px solid #d4d7dc;
+}
+
+.hm-stock-input-row {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+}
+
+.hm-stock-input-row .input-group {
+    flex: 1 1 auto;
+}
+
+.hm-stock-panel {
+    padding: 0;
+    min-height: 100%;
+}
+
+.hm-modal-stock-shell .modal-sector-footer {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin-top: 6px;
+}
+
+.hm-stock-panel h3 {
+    margin: 0 0 14px;
+    font-size: 0.96rem;
+    letter-spacing: 0.04em;
+}
+
+.hm-stock-panel-list {
+    display: grid;
+    gap: 12px;
+    max-height: 420px;
+    overflow: auto;
+}
+
+.hm-stock-panel-empty {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.93rem;
+}
+
+.hm-stock-card {
+    margin-top: 0;
+}
+
+@media (max-width: 920px) {
+    .hm-modal-stock-body {
+        grid-template-columns: 1fr;
+    }
+
+    .hm-modal-stock-active .hm-modal-stock-form {
+        padding-right: 0;
+        border-right: 0;
+    }
+}

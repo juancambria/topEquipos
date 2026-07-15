@@ -6,9 +6,13 @@
 
   const state = {
     equiposPendientes: [],
+    altasPendientes: [],
     indiceEquipoActual: 0,
+    indiceAltaActual: 0,
     creandoEquipo: false,
+    creandoAlta: false,
     datosEquipoAnterior: null,
+    datosAltaAnterior: null,
     renglonPendienteActualIndex: null,
     confirmFilaPendiente: null,
     selectedFacturaId: null,
@@ -984,7 +988,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
         </div>
         <div class="modal-sector-footer">
           <button type="button" class="btn btn-secundario" id="confirmAccionCancelar">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="confirmAccionAceptar">Confirmar</button>
+          <button type="button" class="btn btn-danger" id="confirmAccionAceptar">Guardar</button>
         </div>
       </div>
     `;
@@ -1010,7 +1014,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
         </div>
         <div class="modal-sector-body" id="facturaDetalleContentDynamic" style="overflow:auto;"></div>
         <div class="modal-sector-footer">
-          <button type="button" class="btn btn-secundario" id="facturaDetalleCerrarFooter">Cerrar</button>
+          <button type="button" class="btn btn-secundario" id="facturaDetalleCerrarFooter">Cancelar</button>
         </div>
       </div>
     `;
@@ -1027,7 +1031,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
   function confirmarAccion({
     titulo = 'Confirmación',
     texto = 'Estás por comenzar a crear una nueva factura. ¿Desea continuar?',
-    textoAceptar = 'Confirmar',
+    textoAceptar = 'Guardar',
     textoCancelar = 'Cancelar',
     peligro = true,
   } = {}) {
@@ -1371,40 +1375,49 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
   function sincronizarDetallesFacturaEnFormulario(form) {
     if (!form) return;
-
     form.querySelectorAll('.factura-detalle-mirror').forEach((el) => el.remove());
 
-    $$('#detallesBody tr.detalle-row').forEach((fila, index) => {
-      const campos = [
-        ['operacion', $('.input-operacion', fila)?.value || ''],
-        ['de', $('.input-de', fila)?.value || ''],
-        ['cantidad', $('.input-cantidad', fila)?.value || ''],
-        ['concepto', $('.input-concepto', fila)?.value || ''],
-        ['precioUnitario', $('.input-precio', fila)?.value || ''],
-        ['porcentajeIva', $('.input-iva', fila)?.value || ''],
-        ['porcentajeDto', $('.input-bonif', fila)?.value || ''],
-        ['obra', $('.input-obra', fila)?.value || ''],
-        ['subtotal', $('.input-subtotal-hidden', fila)?.value || '0'],
-      ];
+    $$('#detallesBody tr.detalle-row').forEach((fila) => {
+      const idCodigoInput = $('.input-id-codigo-codigo', fila);
+      const valor = fila.dataset.createdEntityId || '';
 
-      campos.forEach(([campo, valor]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = `detalles[${index}][${campo}]`;
-        input.value = valor;
-        input.className = 'factura-detalle-mirror';
-        form.appendChild(input);
-      });
+      if (idCodigoInput) {
+        idCodigoInput.value = valor;
+        return;
+      }
+
+      const index = fila.dataset.index;
+      if (index == null) return;
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = `detalles[${index}][idCodigoCodigo]`;
+      input.value = valor;
+      input.className = 'factura-detalle-mirror input-id-codigo-codigo';
+      fila.appendChild(input);
     });
   }
 
-  function verificarRenglonCompletoParaEquipos(inputs) {
-    return (
-      inputs.operacion?.value === 'compra' &&
-      inputs.de?.value === 'Equipo' &&
-      toNum(inputs.cantidad?.value) >= 1 &&
-      toNum(inputs.precio?.value) > 0
-    );
+  function getAltaEntityType(fila) {
+    const operacion = $('.input-operacion', fila)?.value || '';
+    const de = $('.input-de', fila)?.value || '';
+    if (operacion !== 'compra') return '';
+    if (de === 'Equipo' || de === 'Herramienta' || de === 'Material') return de;
+    return '';
+  }
+
+  function verificarRenglonCompletoParaAlta(inputs) {
+    const de = inputs.de?.value || '';
+    if (inputs.operacion?.value !== 'compra') return false;
+    if (!['Equipo', 'Herramienta', 'Material'].includes(de)) return false;
+    if (toNum(inputs.cantidad?.value) < 1) return false;
+    if (toNum(inputs.precio?.value) <= 0) return false;
+    if (de === 'Equipo') return true;
+
+    const fila = inputs.de?.closest('tr');
+    if (!String($('.input-concepto', fila)?.value || '').trim()) return false;
+    if (toNum($('.input-iva', fila)?.value) <= 0) return false;
+    return true;
   }
 
   function rowIsPending(fila) {
@@ -1519,7 +1532,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     setModalVisible('modalConfirmAltaEquiposFactura', false, true);
   }
 
-  function iniciarAltaEquiposParaFila(fila) {
+  function iniciarAltaParaFila(fila) {
     if (!fila || !fila.isConnected) return;
 
     const rowIndex = parseInt(fila.dataset.index || '0', 10);
@@ -1527,11 +1540,13 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const cantidad = Math.max(1, Math.trunc(cantidadRaw));
     const precioRenglon = toNum($('.input-precio', fila)?.value);
     const precioPorEquipo = cantidad > 0 ? (precioRenglon / cantidad) : 0;
-    const concepto = ($('.input-concepto', fila)?.value || 'equipos').trim();
+    const concepto = ($('.input-concepto', fila)?.value || '').trim();
+    const entityType = getAltaEntityType(fila);
+    if (!entityType) return;
 
     const proxy = `detalle_row_${rowIndex}_${Date.now()}`;
     window.equiposCreadosPorDetalle = window.equiposCreadosPorDetalle || {};
-    window.equiposCreadosPorDetalle[proxy] = { creados: 0, total: cantidad };
+    window.equiposCreadosPorDetalle[proxy] = { creados: 0, total: entityType === 'Equipo' ? cantidad : 1, entityType };
 
     fila.dataset.pendiente = 'true';
     fila.dataset.iddetalleproxy = proxy;
@@ -1543,20 +1558,29 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     });
 
     state.renglonPendienteActualIndex = rowIndex;
-    state.equiposPendientes = Array.from({ length: cantidad }, (_, i) => ({
+    state.equiposPendientes = Array.from({ length: entityType === 'Equipo' ? cantidad : 0 }, (_, i) => ({
       idDetalle: proxy,
       concepto,
       index: i,
       precioPorEquipo: precioPorEquipo > 0 ? Number(precioPorEquipo.toFixed(4)) : 0,
     }));
     state.indiceEquipoActual = 0;
+    state.altasPendientes = entityType !== 'Equipo' ? [{
+      idDetalle: proxy,
+      entityType,
+      concepto,
+      cantidad,
+      precioUnitario: precioRenglon,
+    }] : [];
+    state.indiceAltaActual = 0;
 
     verificarPendientesRestantes();
-    toast(`Renglón ${rowIndex + 1} pendiente. Iniciá el alta de ${cantidad} equipos.`, 'warning');
-    mostrarModalEquipoActual(true);
+    toast(`Renglón ${rowIndex + 1} pendiente. Iniciá el alta de ${entityType === 'Equipo' ? cantidad + ' equipos' : entityType.toLowerCase()}.`, 'warning');
+    if (entityType === 'Equipo') mostrarModalEquipoActual(true);
+    else mostrarModalAltaActual(true);
   }
 
-  function reanudarAltaEquiposParaFila(fila) {
+  function reanudarAltaParaFila(fila) {
     if (!fila || !fila.isConnected || !rowIsPending(fila)) return false;
 
     const proxy = fila.dataset.iddetalleproxy;
@@ -1564,24 +1588,35 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     const tracker = window.equiposCreadosPorDetalle?.[proxy];
     const resumenCount = Array.isArray(obtenerMapResumenEquipos()[proxy]) ? obtenerMapResumenEquipos()[proxy].length : 0;
-    const concepto = ($('.input-concepto', fila)?.value || 'equipos').trim();
+    const resumenAltas = Array.isArray(obtenerMapResumenAltas()[proxy]) ? obtenerMapResumenAltas()[proxy].length : 0;
+    const concepto = ($('.input-concepto', fila)?.value || '').trim();
+    const entityType = tracker?.entityType || getAltaEntityType(fila);
     const total = Math.max(1, Math.trunc(tracker?.total || toNum($('.input-cantidad', fila)?.value) || 1));
     const precioRenglon = toNum($('.input-precio', fila)?.value);
     const precioPorEquipo = total > 0 ? (precioRenglon / total) : 0;
-    const creados = Math.max(0, Math.trunc(Math.max(tracker?.creados || 0, resumenCount)));
+    const creados = Math.max(0, Math.trunc(Math.max(tracker?.creados || 0, entityType === 'Equipo' ? resumenCount : resumenAltas)));
 
     state.renglonPendienteActualIndex = parseInt(fila.dataset.index || '0', 10);
-    state.equiposPendientes = Array.from({ length: total }, (_, i) => ({
+    state.equiposPendientes = Array.from({ length: entityType === 'Equipo' ? total : 0 }, (_, i) => ({
       idDetalle: proxy,
       concepto,
       index: i,
       precioPorEquipo: precioPorEquipo > 0 ? Number(precioPorEquipo.toFixed(4)) : 0,
     }));
     state.indiceEquipoActual = Math.min(creados, Math.max(total - 1, 0));
+    state.altasPendientes = entityType !== 'Equipo' ? [{
+      idDetalle: proxy,
+      entityType,
+      concepto,
+      cantidad: Math.max(1, Math.trunc(toNum($('.input-cantidad', fila)?.value) || 1)),
+      precioUnitario: precioRenglon,
+    }] : [];
+    state.indiceAltaActual = 0;
 
     marcarRenglonRequiereAlta(fila, false);
     verificarPendientesRestantes();
-    mostrarModalEquipoActual(true);
+    if (entityType === 'Equipo') mostrarModalEquipoActual(true);
+    else mostrarModalAltaActual(true);
     return true;
   }
 
@@ -1594,14 +1629,18 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     setModalVisible('modalConfirmAltaEquiposFactura', false, true);
     state.confirmFilaPendiente = null;
-    iniciarAltaEquiposParaFila(fila);
+    iniciarAltaParaFila(fila);
   }
 
-  function mostrarAlertaCrearEquipos(fila) {
+  function mostrarAlertaCrearEntidad(fila) {
     const rowIndex = parseInt(fila.dataset.index || '0', 10) + 1;
     const cantidadRaw = toNum($('.input-cantidad', fila)?.value);
     const cantidad = Math.max(1, Math.trunc(cantidadRaw));
-    const concepto = ($('.input-concepto', fila)?.value || 'equipos').trim();
+    const concepto = ($('.input-concepto', fila)?.value || '').trim();
+    const entityType = getAltaEntityType(fila);
+    const etiqueta = entityType === 'Equipo'
+      ? `${cantidad} equipos`
+      : `${entityType.toLowerCase()}`;
 
     marcarRenglonRequiereAlta(fila, true);
     verificarPendientesRestantes();
@@ -1609,7 +1648,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     const txt = document.getElementById('confirmAltaEquiposTexto');
     if (txt) {
-      txt.textContent = `El renglón ${rowIndex} requiere dar de alta ${cantidad} equipos de "${concepto}".`;
+      txt.textContent = `El renglón ${rowIndex} requiere dar de alta ${etiqueta} de "${concepto}".`;
     }
 
     const btn = document.getElementById('btnConfirmAltaEquiposFactura');
@@ -1624,6 +1663,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       de: $('.input-de', fila),
       cantidad: $('.input-cantidad', fila),
       precio: $('.input-precio', fila),
+      concepto: $('.input-concepto', fila),
+      iva: $('.input-iva', fila),
     };
 
     const getHash = () => [
@@ -1631,13 +1672,15 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       inputs.de?.value || '',
       toNum(inputs.cantidad?.value || 0),
       toNum(inputs.precio?.value || 0),
+      (inputs.concepto?.value || '').trim(),
+      toNum(inputs.iva?.value || 0),
     ].join('|');
     let alertaTimer = null;
 
     const trigger = () => {
       if (rowIsCompleted(fila)) return;
       if (rowIsPending(fila)) return;
-      const cumple = verificarRenglonCompletoParaEquipos(inputs);
+      const cumple = verificarRenglonCompletoParaAlta(inputs);
       if (!cumple) {
         if (alertaTimer) clearTimeout(alertaTimer);
         fila.dataset.lastTriggerHash = '';
@@ -1653,15 +1696,15 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       alertaTimer = setTimeout(() => {
         if (!fila.isConnected || rowIsPending(fila)) return;
         if (fila.dataset.lastTriggerHash !== hash) return;
-        mostrarAlertaCrearEquipos(fila);
+        mostrarAlertaCrearEntidad(fila);
       }, 1200);
     };
 
     // Flexible: no disparar mientras escribe, solo al confirmar/terminar el campo.
-    [inputs.operacion, inputs.de, inputs.cantidad, inputs.precio].forEach((el) => {
+    [inputs.operacion, inputs.de, inputs.cantidad, inputs.precio, inputs.concepto, inputs.iva].forEach((el) => {
       if (!el) return;
       el.addEventListener('change', trigger);
-      if (el === inputs.cantidad || el === inputs.precio) el.addEventListener('blur', trigger);
+      if (el === inputs.cantidad || el === inputs.precio || el === inputs.concepto) el.addEventListener('blur', trigger);
     });
   }
 
@@ -1706,6 +1749,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       </td>
       <td>
         <input type="text" name="detalles[${index}][obra]" maxlength="100" class="form-control input-obra">
+        <input type="hidden" name="detalles[${index}][idCodigoCodigo]" class="input-id-codigo-codigo" value="">
       </td>
       <td>
         <input type="text" class="form-control input-subtotal text-right" value="0,00" readonly>
@@ -1740,7 +1784,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       const precio = toNum($('.input-precio', fila)?.value);
 
       if (!operacion || !de || !concepto || cantidad < 1 || precio <= 0) return true;
-      if (operacion === 'compra' && de === 'Equipo') return !rowIsCompleted(fila);
+      if (operacion === 'compra' && ['Equipo', 'Herramienta', 'Material'].includes(de)) return !rowIsCompleted(fila);
       return false;
     });
     if (primeraIncompleta) {
@@ -1782,16 +1826,21 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const proxy = fila.dataset.iddetalleproxy;
     const mapResumen = obtenerMapResumenEquipos();
     const resumenCount = Array.isArray(mapResumen[proxy]) ? mapResumen[proxy].length : 0;
+    const mapResumenAltas = obtenerMapResumenAltas();
+    const resumenAltasCount = Array.isArray(mapResumenAltas[proxy]) ? mapResumenAltas[proxy].length : 0;
     const tracker = proxy && window.equiposCreadosPorDetalle ? window.equiposCreadosPorDetalle[proxy] : null;
     const totalAsociados = Math.max(
       tracker?.total || 0,
       tracker?.creados || 0,
       resumenCount,
+      resumenAltasCount,
     );
-    const creados = Math.max(tracker?.creados || 0, resumenCount);
+    const creados = Math.max(tracker?.creados || 0, resumenCount, resumenAltasCount);
     const pendientes = Math.max(0, totalAsociados - creados);
+    const entityType = tracker?.entityType || getAltaEntityType(fila) || 'Equipo';
+    const entityLabel = entityType === 'Equipo' ? 'equipo(s)' : `${entityType.toLowerCase()}(s)`;
     const mensaje = totalAsociados > 0
-      ? `Este renglón tiene ${totalAsociados} equipo(s) asociado(s).\nCreados: ${creados} | Pendientes: ${pendientes}\nSi continuás, se eliminará el renglón y su referencia de equipos.`
+      ? `Este renglón tiene ${totalAsociados} ${entityLabel} asociado(s).\nCreados: ${creados} | Pendientes: ${pendientes}\nSi continuás, se eliminará el renglón y su referencia.`
       : '¿Seguro que querés eliminar este renglón?';
 
     const confirmado = await confirmarAccion({
@@ -1804,8 +1853,13 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     if (!confirmado) return;
 
     try {
-      const res = await eliminarEquiposRealesPorProxy(proxy);
-      if (res.deleted > 0) toast(`Se eliminaron ${res.deleted} equipo(s) asociados`, 'info');
+      if (entityType === 'Equipo') {
+        const res = await eliminarEquiposRealesPorProxy(proxy);
+        if (res.deleted > 0) toast(`Se eliminaron ${res.deleted} equipo(s) asociados`, 'info');
+      } else {
+        const res = await eliminarAltasRealesPorProxy(proxy, entityType);
+        if (res.deleted > 0) toast(`Se eliminaron ${res.deleted} ${entityType.toLowerCase()}(s) asociado(s)`, 'info');
+      }
     } catch (e) {
       toast(`No se puede eliminar el renglón: ${e.message}`, 'error');
       return;
@@ -1814,9 +1868,11 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     if (pending && proxy && window.equiposCreadosPorDetalle) {
       delete window.equiposCreadosPorDetalle[proxy];
       state.equiposPendientes = state.equiposPendientes.filter((e) => e.idDetalle !== proxy);
+      state.altasPendientes = state.altasPendientes.filter((e) => e.idDetalle !== proxy);
       if (state.indiceEquipoActual >= state.equiposPendientes.length) state.indiceEquipoActual = 0;
     }
     if (proxy) limpiarResumenEquiposPorProxy(proxy);
+    if (proxy) limpiarResumenAltasPorProxy(proxy);
 
     fila.remove();
     renumerarIndicesFilas();
@@ -1830,11 +1886,11 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const fila = btn?.closest('tr');
     if (!fila) return;
     if (rowIsPending(fila)) {
-      reanudarAltaEquiposParaFila(fila);
+      reanudarAltaParaFila(fila);
       return;
     }
     state.confirmFilaPendiente = null;
-    iniciarAltaEquiposParaFila(fila);
+    iniciarAltaParaFila(fila);
   }
 
   function abrirModalCrear() {
@@ -1855,12 +1911,15 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     if (facturaId) facturaId.value = '';
     if (method) method.value = '';
     if (title) title.textContent = 'Nueva Factura';
-    if (submit) submit.textContent = 'Crear Factura';
+    if (submit) submit.textContent = 'Guardar';
     if (tbody) tbody.innerHTML = '';
 
     state.equiposPendientes = [];
+    state.altasPendientes = [];
     state.indiceEquipoActual = 0;
+    state.indiceAltaActual = 0;
     state.datosEquipoAnterior = null;
+    state.datosAltaAnterior = null;
 
     window.equiposPorCrear = [];
     window.idFacturaActual = null;
@@ -1899,8 +1958,18 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     const tbody = document.getElementById('detallesBody');
     if (!tbody) return;
     tbody.innerHTML = '';
+    window.equiposCreadosPorDetalle = {};
+    window.equiposResumenPorDetalle = {};
+    window.altasResumenPorDetalle = {};
 
-    (data.detalles || []).forEach((detalle) => {
+    const detallesConAltas = Array.isArray(data.detalles_con_altas) ? data.detalles_con_altas : [];
+    const detallesConAltasMap = {};
+    detallesConAltas.forEach((item) => {
+      const key = item?.detalle?.idFacturaDet;
+      if (key != null) detallesConAltasMap[String(key)] = item;
+    });
+
+    (data.detalles || []).forEach((detalle, idx) => {
       agregarDetalleFila();
       const fila = tbody.lastElementChild;
       if (!fila) return;
@@ -1923,8 +1992,66 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       assign('.input-iva', detalle.porcentajeIva || '');
       assign('.input-bonif', detalle.porcentajeDto || 0);
       assign('.input-obra', detalle.obra || '');
+      if (detalle.idCodigoCodigo != null && String(detalle.idCodigoCodigo).trim() !== '') {
+        fila.dataset.createdEntityId = String(detalle.idCodigoCodigo);
+      }
 
       calcularSubtotalFila($('.input-cantidad', fila));
+
+      const detalleAlta = detallesConAltasMap[String(detalle.idFacturaDet)] || null;
+      const proxy = `detalle_existente_${detalle.idFacturaDet || idx}`;
+      const itemsEquipos = Array.isArray(detalleAlta?.equipos) ? detalleAlta.equipos : [];
+      const itemsHerramientas = Array.isArray(detalleAlta?.herramientas) ? detalleAlta.herramientas : [];
+      const itemsMateriales = Array.isArray(detalleAlta?.materiales) ? detalleAlta.materiales : [];
+      const totalAltas = itemsEquipos.length + itemsHerramientas.length + itemsMateriales.length;
+
+      if (totalAltas > 0) {
+        fila.dataset.iddetalleproxy = proxy;
+        window.equiposCreadosPorDetalle[proxy] = {
+          creados: totalAltas,
+          total: totalAltas,
+          entityType: detalle.de || '',
+        };
+
+        if (itemsEquipos.length) {
+          obtenerMapResumenEquipos()[proxy] = itemsEquipos.map((e) => ({
+            id: e.id,
+            serie: e.serie,
+            tipo: e.tipo,
+          }));
+          renderResumenEquiposPorProxy(proxy);
+        }
+
+        const altas = [];
+        itemsHerramientas.forEach((h) => {
+          altas.push({
+            id: h.id,
+            entityLabel: 'Herramienta',
+            descripcion: h.descripcion,
+            familia: h.familia,
+            marca: h.marca,
+            modelo: h.modelo,
+          });
+        });
+        itemsMateriales.forEach((m) => {
+          altas.push({
+            id: m.id,
+            entityLabel: 'Material',
+            descripcion: m.descripcion,
+            familia: m.familia,
+            marca: m.marca,
+            modelo: m.modelo,
+            stock: m.cantidad_alta ?? m.stock,
+          });
+        });
+        if (altas.length) {
+          obtenerMapResumenAltas()[proxy] = altas;
+          renderResumenAltasPorProxy(proxy);
+        }
+
+        const rowIdx = parseInt(fila.dataset.index || '-1', 10);
+        if (rowIdx >= 0) marcarRenglonCompletado(rowIdx);
+      }
     });
 
     aplicarBloqueoRenglonesCompletados();
@@ -1940,7 +2067,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     if (title) title.textContent = 'Editar Factura';
     if (form) form.action = `/facturas/${id}/actualizar`;
-    if (submit) submit.textContent = 'Guardar Cambios';
+    if (submit) submit.textContent = 'Guardar';
   }
 
   function abrirModalEditar(id) {
@@ -2015,11 +2142,18 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
               })();
 
         let detailsReadonly = '';
-        let detallesConEquipos = data.detalles_con_equipos || [];
+        const detallesConAltas = Array.isArray(data.detalles_con_altas) ? data.detalles_con_altas : [];
+        const detallesConAltasMap = {};
+        detallesConAltas.forEach((item) => {
+          const key = item?.detalle?.idFacturaDet;
+          if (key != null) detallesConAltasMap[String(key)] = item;
+        });
         
-        detallesConEquipos.forEach((item, idx) => {
-          const d = item.detalle;
+        (data.detalles || []).forEach((d) => {
+          const item = detallesConAltasMap[String(d.idFacturaDet)] || {};
           const equipos = item.equipos || [];
+          const herramientas = item.herramientas || [];
+          const materiales = item.materiales || [];
           
           detailsReadonly += `
             <tr class="detalle-row factura-detalle-readonly-row">
@@ -2035,7 +2169,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
             </tr>
           `;
           
-          // Resumen equipos (verde como en edición)
+          // Resumen altas (verde como en edición)
           if (equipos.length > 0) {
             let equiposHtml = equipos.map(e => `
               <div style="padding: 2px 0;">
@@ -2047,6 +2181,38 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
               <tr class="detalle-row-equipos-readonly">
                 <td colspan="9" style="padding: 5px 10px; background: #e8f5e8; font-size: 0.85em;">
                   ${equiposHtml}
+                </td>
+              </tr>
+            `;
+          }
+
+          if (herramientas.length > 0) {
+            let herramientasHtml = herramientas.map(h => `
+              <div style="padding: 2px 0;">
+                <strong>Herramienta:</strong> ID ${h.id} - ${escapeHtml(h.descripcion)} - ${escapeHtml(h.familia)} / ${escapeHtml(h.marca)} / ${escapeHtml(h.modelo)}
+              </div>
+            `).join('');
+
+            detailsReadonly += `
+              <tr class="detalle-row-equipos-readonly">
+                <td colspan="9" style="padding: 5px 10px; background: #e8f5e8; font-size: 0.85em;">
+                  ${herramientasHtml}
+                </td>
+              </tr>
+            `;
+          }
+
+          if (materiales.length > 0) {
+            let materialesHtml = materiales.map(m => `
+              <div style="padding: 2px 0;">
+                <strong>Material:</strong> ID ${m.id} - ${escapeHtml(m.descripcion)} - ${escapeHtml(m.familia)} / ${escapeHtml(m.marca)} / ${escapeHtml(m.modelo)} - Cantidad: ${escapeHtml(m.cantidad_alta ?? '')}
+              </div>
+            `).join('');
+
+            detailsReadonly += `
+              <tr class="detalle-row-equipos-readonly">
+                <td colspan="9" style="padding: 5px 10px; background: #e8f5e8; font-size: 0.85em;">
+                  ${materialesHtml}
                 </td>
               </tr>
             `;
@@ -2116,7 +2282,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
                   <tbody>${detailsReadonly}</tbody>
                 </table>
               ` : '<div class="factura-detalle-vacio">Esta factura no tiene renglones cargados.</div>'}
-              ${detallesConEquipos.length === 0 ? '' : `
+              ${detallesConAltas.length === 0 ? '' : `
                 <style>
                   .detalle-row-equipos-readonly {
                     border-left: 4px solid #28a745;
@@ -2467,6 +2633,19 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     if (row) row.remove();
   }
 
+  function obtenerMapResumenAltas() {
+    window.altasResumenPorDetalle = window.altasResumenPorDetalle || {};
+    return window.altasResumenPorDetalle;
+  }
+
+  function limpiarResumenAltasPorProxy(proxy) {
+    if (!proxy) return;
+    const map = obtenerMapResumenAltas();
+    delete map[proxy];
+    const row = document.querySelector(`#detallesBody tr.detalle-row-altas[data-parent-proxy="${proxy}"]`);
+    if (row) row.remove();
+  }
+
   async function eliminarEquiposRealesPorProxy(proxy) {
     if (!proxy) return { ok: true, deleted: 0 };
 
@@ -2499,6 +2678,30 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     }
 
     return { ok: true, deleted: Number(data.deleted || 0) };
+  }
+
+  async function eliminarAltasRealesPorProxy(proxy, entityType) {
+    if (!proxy || !entityType || entityType === 'Equipo') return { ok: true, deleted: 0 };
+    const items = Array.isArray(obtenerMapResumenAltas()[proxy]) ? obtenerMapResumenAltas()[proxy] : [];
+    const ids = items
+      .map((it) => parseInt(String(it?.id || ''), 10))
+      .filter((id) => Number.isInteger(id) && id > 0);
+    if (!ids.length) return { ok: true, deleted: 0 };
+
+    let deleted = 0;
+    const base = entityType === 'Herramienta' ? '/herramientas' : '/materiales';
+    for (const id of ids) {
+      const response = await fetch(`${base}/${id}/baja`, {
+        method: 'POST',
+        headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest' }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || `Error HTTP ${response.status}`);
+      }
+      deleted += 1;
+    }
+    return { ok: true, deleted };
   }
 
   function renderResumenEquiposPorProxy(proxy) {
@@ -2548,6 +2751,54 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     map[proxy] = map[proxy] || [];
     map[proxy].push(item);
     renderResumenEquiposPorProxy(proxy);
+  }
+
+  function renderResumenAltasPorProxy(proxy) {
+    if (!proxy) return;
+    const map = obtenerMapResumenAltas();
+    const items = Array.isArray(map[proxy]) ? map[proxy] : [];
+    const parentRow = document.querySelector(`#detallesBody tr.detalle-row[data-iddetalleproxy="${proxy}"]`);
+    if (!parentRow) return;
+
+    let infoRow = parentRow.nextElementSibling;
+    while (infoRow && !infoRow.classList.contains('detalle-row') && infoRow.dataset.parentProxy !== proxy) {
+      infoRow = infoRow.nextElementSibling;
+    }
+    if (!infoRow || !infoRow.classList.contains('detalle-row-altas') || infoRow.dataset.parentProxy !== proxy) {
+      infoRow = document.createElement('tr');
+      infoRow.className = 'detalle-row-altas';
+      infoRow.dataset.parentProxy = proxy;
+      parentRow.parentNode.insertBefore(infoRow, parentRow.nextSibling);
+    }
+
+    if (!items.length) {
+      infoRow.remove();
+      return;
+    }
+
+    const rowsHtml = items.map((it) => {
+      const titulo = escapeHtml(it.entityLabel || 'Alta');
+      const descripcion = escapeHtml(it.descripcion || '—');
+      const familia = escapeHtml(it.familia || '—');
+      const marca = escapeHtml(it.marca || '—');
+      const modelo = escapeHtml(it.modelo || '—');
+      const stock = it.stock == null ? '' : ` | Stock: ${escapeHtml(it.stock)}`;
+      return `<div style="padding: 2px 0;"><strong>${titulo}:</strong> ID ${escapeHtml(it.id)} - ${descripcion} - ${familia} / ${marca} / ${modelo}${stock}</div>`;
+    }).join('');
+
+    infoRow.innerHTML = `<td colspan="10" style="padding: 5px 10px; background: #e8f5e8; font-size: 0.85em;">${rowsHtml}</td>`;
+  }
+
+  function registrarAltaCreada(proxy, item) {
+    if (!proxy) return;
+    const map = obtenerMapResumenAltas();
+    map[proxy] = map[proxy] || [];
+    map[proxy].push(item);
+    const parentRow = document.querySelector(`#detallesBody tr.detalle-row[data-iddetalleproxy="${proxy}"]`);
+    if (parentRow && item?.id != null) {
+      parentRow.dataset.createdEntityId = String(item.id);
+    }
+    renderResumenAltasPorProxy(proxy);
   }
 
   function abrirModalProveedor(mode = 'crear') {
@@ -2649,8 +2900,11 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
   function finalizarColaEquipos() {
     state.equiposPendientes = [];
+    state.altasPendientes = [];
     state.indiceEquipoActual = 0;
+    state.indiceAltaActual = 0;
     state.creandoEquipo = false;
+    state.creandoAlta = false;
 
     window.equiposPorCrear = [];
     window.idFacturaActual = null;
@@ -2660,6 +2914,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     localStorage.setItem('equiposFacturaCompletados', 'true');
     
     setModalVisible('modalEquipoFactura', false, true);
+    setModalVisible('modalHerramientaFactura', false, true);
+    setModalVisible('modalMaterialFactura', false, true);
 
     fetch('/facturas/limpiar-sesion-equipos', {
       method: 'POST',
@@ -2703,6 +2959,221 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     });
     if (!confirmado) return false;
     setModalVisible('modalEquipoFactura', false, true);
+    return true;
+  }
+
+  function obtenerConfigAltaFactura(entityType) {
+    if (entityType === 'Herramienta') {
+      return {
+        entityType,
+        modalId: 'modalHerramientaFactura',
+        formId: 'formHerramientaFactura',
+        titleInfoId: 'herramientaFacturaRowInfo',
+        submitId: 'btnHerramientaFacturaGuardar',
+        familiaId: 'herramientaFacturaFamilia',
+        marcaId: 'herramientaFacturaMarca',
+        modeloId: 'herramientaFacturaModelo',
+        descripcionId: 'herramientaFacturaDescripcion',
+        stockId: null,
+        createUrl: '/herramientas/crear',
+        apiFamilias: '/herramientas/api/familias',
+        apiMarcas: '/herramientas/api/marcas',
+        apiModelos: '/herramientas/api/modelos',
+        createFamilyUrl: '/herramientas/familias/crear',
+        createBrandUrl: '/herramientas/marcas/crear',
+        createModelUrl: '/herramientas/modelos/crear',
+        familyParam: 'herramienta_familia_id',
+        brandParam: 'herramienta_marca_id',
+        entityLabel: 'Herramienta',
+      };
+    }
+
+    return {
+      entityType: 'Material',
+      modalId: 'modalMaterialFactura',
+      formId: 'formMaterialFactura',
+      titleInfoId: 'materialFacturaRowInfo',
+      submitId: 'btnMaterialFacturaGuardar',
+      familiaId: 'materialFacturaFamilia',
+      tipificacionId: 'materialFacturaTipificacion',
+      marcaId: 'materialFacturaMarca',
+      modeloId: 'materialFacturaModelo',
+      stockId: 'materialFacturaStock',
+      facturaIdField: 'materialFacturaIdFactura',
+      facturaNumeroField: 'materialFacturaNumeroFactura',
+      facturaFechaField: 'materialFacturaFechaFactura',
+      proveedorIdField: 'materialFacturaProveedorId',
+      proveedorNombreField: 'materialFacturaProveedorNombre',
+      precioUnitarioField: 'materialFacturaPrecioUnitario',
+      createUrl: '/materiales/crear',
+      apiFamilias: '/materiales/api/familias',
+      apiTipificaciones: '/materiales/api/tipificaciones',
+      apiMarcas: '/materiales/api/marcas',
+      apiModelos: '/materiales/api/modelos',
+      createFamilyUrl: '/materiales/familias/crear',
+      createTipificationUrl: '/materiales/tipificaciones/crear',
+      createBrandUrl: '/materiales/marcas/crear',
+      createModelUrl: '/materiales/modelos/crear',
+      familyParam: 'material_familia_id',
+      tipificationParam: 'material_tipificacion_id',
+      brandParam: 'material_marca_id',
+      entityLabel: 'Material',
+    };
+  }
+
+  async function cargarOpcionesAltaFactura(config, tipo, selected = '') {
+    let url = config.apiFamilias;
+    if (tipo === 'tipificaciones') {
+      const family = document.getElementById(config.familiaId)?.value || '';
+      const u = new URL(config.apiTipificaciones, window.location.origin);
+      if (family) u.searchParams.set(config.familyParam, family);
+      url = u.toString();
+    }
+    if (tipo === 'marcas') {
+      const family = document.getElementById(config.familiaId)?.value || '';
+      const u = new URL(config.apiMarcas, window.location.origin);
+      if (family) u.searchParams.set(config.familyParam, family);
+      url = u.toString();
+    }
+    if (tipo === 'modelos') {
+      const family = document.getElementById(config.familiaId)?.value || '';
+      const brand = document.getElementById(config.marcaId)?.value || '';
+      const u = new URL(config.apiModelos, window.location.origin);
+      if (family) u.searchParams.set(config.familyParam, family);
+      if (brand) u.searchParams.set(config.brandParam, brand);
+      url = u.toString();
+    }
+
+    const data = await window.HMCommon.fetchJson(url);
+    const rows = data.data || [];
+    const targetId = tipo === 'familias'
+      ? config.familiaId
+      : (tipo === 'tipificaciones' ? config.tipificacionId : (tipo === 'marcas' ? config.marcaId : config.modeloId));
+    const placeholder = tipo === 'familias'
+      ? '— Seleccionar familia —'
+      : (tipo === 'tipificaciones'
+        ? '— Seleccionar —'
+        : (tipo === 'marcas' ? '— Seleccionar marca —' : '— Seleccionar modelo —'));
+    window.HMCommon.fillSelect(document.getElementById(targetId), rows, placeholder, selected);
+  }
+
+  async function crearRapidoAltaFactura(config, tipo) {
+    const family = document.getElementById(config.familiaId);
+    const tipification = document.getElementById(config.tipificacionId);
+    const brand = document.getElementById(config.marcaId);
+    if (tipo !== 'familia' && !window.HMCommon.requireSelect(family)) return;
+    if (tipo === 'modelo' && !window.HMCommon.requireSelect(brand)) return;
+
+    const creada = await window.HMCommon.createQuickEntity({
+      modalId: `${config.modalId}${tipo}Quick`,
+      title: tipo === 'familia' ? 'Nueva Familia' : (tipo === 'tipificacion' ? 'Nueva Tipificación' : (tipo === 'marca' ? 'Nueva Marca' : 'Nuevo Modelo')),
+      bodyHtml: `<div class="form-grupo"><label for="${config.modalId}${tipo}Nombre">Nombre</label><input type="text" id="${config.modalId}${tipo}Nombre" maxlength="120" required></div>`,
+      confirmTitle: tipo === 'familia' ? 'Crear familia' : (tipo === 'tipificacion' ? 'Crear tipificación' : (tipo === 'marca' ? 'Crear marca' : 'Crear modelo')),
+      confirmMessage: '¿Desea continuar?',
+      successMessage: `${tipo === 'familia' ? 'Familia' : tipo === 'tipificacion' ? 'Tipificación' : tipo === 'marca' ? 'Marca' : 'Modelo'} creada correctamente`,
+      url: tipo === 'familia' ? config.createFamilyUrl : (tipo === 'tipificacion' ? config.createTipificationUrl : (tipo === 'marca' ? config.createBrandUrl : config.createModelUrl)),
+      onBeforeOpen: function() {
+        const input = document.getElementById(`${config.modalId}${tipo}Nombre`);
+        if (input) input.value = '';
+      },
+      buildPayload: function() {
+        const payload = { nombre: document.getElementById(`${config.modalId}${tipo}Nombre`)?.value || '' };
+        if (tipo !== 'familia') payload[config.familyParam] = family.value;
+        if (tipo === 'modelo') payload[config.brandParam] = brand.value;
+        return payload;
+      },
+    });
+
+    if (!creada?.id) return;
+    await cargarOpcionesAltaFactura(config, 'familias', tipo === 'familia' ? creada.id : family.value);
+    if (tipo === 'familia') {
+      if (tipification) {
+        await cargarOpcionesAltaFactura(config, 'tipificaciones', '');
+      }
+      await cargarOpcionesAltaFactura(config, 'marcas', '');
+      window.HMCommon.fillSelect(document.getElementById(config.modeloId), [], '— Seleccionar modelo —', '');
+      return;
+    }
+    if (tipo === 'tipificacion') {
+      await cargarOpcionesAltaFactura(config, 'tipificaciones', creada.id);
+      return;
+    }
+    await cargarOpcionesAltaFactura(config, 'marcas', tipo === 'marca' ? creada.id : brand.value);
+    await cargarOpcionesAltaFactura(config, 'modelos', tipo === 'modelo' ? creada.id : '');
+  }
+
+  async function mostrarModalAltaActual(forceOpen = false) {
+    if (!state.altasPendientes.length || state.indiceAltaActual >= state.altasPendientes.length) {
+      if (forceOpen) finalizarColaEquipos();
+      return;
+    }
+
+    const alta = state.altasPendientes[state.indiceAltaActual];
+    const config = obtenerConfigAltaFactura(alta.entityType);
+    const modal = document.getElementById(config.modalId);
+    const form = document.getElementById(config.formId);
+    if (!modal || !form) return;
+
+    form.reset();
+    form.action = config.createUrl;
+    if (config.stockId) document.getElementById(config.stockId).value = Number(alta.cantidad || 0).toFixed(4);
+    if (config.facturaIdField) {
+      const proveedorSelect = document.getElementById('idProveedor');
+      const proveedorNombre = proveedorSelect?.selectedOptions?.[0]?.textContent?.trim() || '';
+      const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value || '';
+      };
+      setVal(config.facturaIdField, document.getElementById('factura_id')?.value || window.idFacturaActual || '');
+      setVal(config.facturaNumeroField, document.getElementById('numero')?.value || '');
+      setVal(config.facturaFechaField, document.getElementById('fecha')?.value || '');
+      setVal(config.proveedorIdField, proveedorSelect?.value || window.idProveedorActual || '');
+      setVal(config.proveedorNombreField, proveedorNombre);
+      setVal(config.precioUnitarioField, alta?.precioUnitario || '');
+    }
+    await cargarOpcionesAltaFactura(config, 'familias', '');
+    if (config.tipificacionId) {
+      window.HMCommon.fillSelect(document.getElementById(config.tipificacionId), [], '— Seleccionar —', '');
+    }
+    window.HMCommon.fillSelect(document.getElementById(config.marcaId), [], '— Seleccionar marca —', '');
+    window.HMCommon.fillSelect(document.getElementById(config.modeloId), [], '— Seleccionar modelo —', '');
+
+    const rowInfo = document.getElementById(config.titleInfoId);
+    if (rowInfo) {
+      const rowLabel = Number.isInteger(state.renglonPendienteActualIndex) ? ` (Renglón ${state.renglonPendienteActualIndex + 1})` : '';
+      rowInfo.textContent = rowLabel;
+    }
+    const submit = document.getElementById(config.submitId);
+    if (submit) submit.textContent = `Guardar ${config.entityLabel.toLowerCase()}`;
+
+    setModalVisible(config.modalId, true, true);
+    setTimeout(() => document.getElementById(config.familiaId)?.focus(), 80);
+  }
+
+  function omitirAltaActualFactura(entityType) {
+    state.indiceAltaActual += 1;
+    if (state.indiceAltaActual >= state.altasPendientes.length) {
+      toast(`${entityType} omitido. Podés crearlo manualmente luego.`, 'info');
+      finalizarColaEquipos();
+      return;
+    }
+    mostrarModalAltaActual(true);
+  }
+
+  async function cerrarModalAltaDesdeFactura(entityType) {
+    const config = obtenerConfigAltaFactura(entityType);
+    const modal = document.getElementById(config.modalId);
+    if (!modal) return true;
+
+    const confirmado = await confirmarAccion({
+      titulo: `Cerrar alta de ${entityType.toLowerCase()}`,
+      texto: `Hay ${entityType.toLowerCase()}s pendientes. Si cerrás ahora, se omitirán los restantes. ¿Querés continuar?`,
+      textoAceptar: 'Sí, cerrar',
+      textoCancelar: 'Seguir editando',
+      peligro: false,
+    });
+    if (!confirmado) return false;
+    finalizarColaEquipos();
     return true;
   }
 
@@ -2793,13 +3264,13 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       const rowLabel = Number.isInteger(state.renglonPendienteActualIndex) ? ` (Renglón ${state.renglonPendienteActualIndex + 1})` : '';
       rowInfo.textContent = `${rowLabel} (${state.indiceEquipoActual + 1}/${total})`;
     }
-    if (submit) submit.textContent = state.indiceEquipoActual === total - 1 ? 'Crear y Finalizar' : 'Crear Siguiente';
+    if (submit) submit.textContent = 'Guardar';
 
     const btnCerrar = modal.querySelector('.modal-cerrar');
     const btnCancelar = modal.querySelector('.btn-secundario');
     if (btnCerrar) btnCerrar.onclick = cerrarModalEquipoDesdeFactura;
     if (btnCancelar) {
-      btnCancelar.textContent = 'Omitir';
+      btnCancelar.textContent = 'Cancelar';
       btnCancelar.onclick = omitirEquipoActualFactura;
     }
 
@@ -2945,7 +3416,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       const submit = document.getElementById('modalProveedorSubmit');
       const prev = submit?.textContent || 'Crear';
       if (submit) {
-        submit.textContent = 'Guardando...';
+        submit.textContent = 'Guardar';
         submit.disabled = true;
       }
 
@@ -3017,6 +3488,83 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     }
   }
 
+  function initFormularioAltaDesdeFactura(entityType) {
+    const config = obtenerConfigAltaFactura(entityType);
+    const form = document.getElementById(config.formId);
+    if (!form || form.dataset.facturasBound === '1') return;
+    form.dataset.facturasBound = '1';
+
+    document.getElementById(config.familiaId)?.addEventListener('change', async function() {
+      if (config.tipificacionId) {
+        await cargarOpcionesAltaFactura(config, 'tipificaciones', '');
+      }
+      await cargarOpcionesAltaFactura(config, 'marcas', '');
+      window.HMCommon.fillSelect(document.getElementById(config.modeloId), [], '— Seleccionar modelo —', '');
+    });
+
+    document.getElementById(config.marcaId)?.addEventListener('change', async function() {
+      await cargarOpcionesAltaFactura(config, 'modelos', '');
+    });
+
+    const quickButtons = {
+      familia: document.getElementById(entityType === 'Herramienta' ? 'btnHerramientaFacturaNuevaFamilia' : 'btnMaterialFacturaNuevaFamilia'),
+      tipificacion: entityType === 'Herramienta' ? null : document.getElementById('btnMaterialFacturaNuevaTipificacion'),
+      marca: document.getElementById(entityType === 'Herramienta' ? 'btnHerramientaFacturaNuevaMarca' : 'btnMaterialFacturaNuevaMarca'),
+      modelo: document.getElementById(entityType === 'Herramienta' ? 'btnHerramientaFacturaNuevoModelo' : 'btnMaterialFacturaNuevoModelo'),
+    };
+
+    quickButtons.familia?.addEventListener('click', () => { void crearRapidoAltaFactura(config, 'familia'); });
+    quickButtons.tipificacion?.addEventListener('click', () => { void crearRapidoAltaFactura(config, 'tipificacion'); });
+    quickButtons.marca?.addEventListener('click', () => { void crearRapidoAltaFactura(config, 'marca'); });
+    quickButtons.modelo?.addEventListener('click', () => { void crearRapidoAltaFactura(config, 'modelo'); });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!state.altasPendientes.length) return;
+      if (state.creandoAlta) return;
+      state.creandoAlta = true;
+
+      try {
+        const res = await window.HMCommon.postForm(config.createUrl, form);
+        const alta = state.altasPendientes[state.indiceAltaActual];
+        const id = res?.data?.id ?? '-';
+        const familiaTxt = document.getElementById(config.familiaId)?.selectedOptions?.[0]?.textContent?.trim() || '—';
+        const tipificacionTxt = config.tipificacionId
+          ? (document.getElementById(config.tipificacionId)?.selectedOptions?.[0]?.textContent?.trim() || '—')
+          : '';
+        const marcaTxt = document.getElementById(config.marcaId)?.selectedOptions?.[0]?.textContent?.trim() || '—';
+        const modeloTxt = document.getElementById(config.modeloId)?.selectedOptions?.[0]?.textContent?.trim() || '—';
+        const descripcion = tipificacionTxt && tipificacionTxt !== '—' ? tipificacionTxt : (alta?.concepto || '');
+        const stock = config.stockId ? (res?.data?.stock ?? (document.getElementById(config.stockId)?.value || '')) : null;
+
+        registrarAltaCreada(alta?.idDetalle, {
+          id,
+          entityLabel: config.entityLabel,
+          descripcion,
+          familia: familiaTxt,
+          marca: marcaTxt,
+          modelo: modeloTxt,
+          stock,
+        });
+        completarFilaSiCorresponde(alta?.idDetalle);
+        state.indiceAltaActual += 1;
+        form.reset();
+        setModalVisible(config.modalId, false, true);
+        toast(`${config.entityLabel} creada correctamente`, 'success');
+
+        if (state.indiceAltaActual >= state.altasPendientes.length) {
+          finalizarColaEquipos();
+        } else {
+          mostrarModalAltaActual(true);
+        }
+      } catch (err) {
+        toast(err.message || `No se pudo crear ${config.entityLabel.toLowerCase()}`, 'error');
+      } finally {
+        state.creandoAlta = false;
+      }
+    });
+  }
+
   function initFormularioEquipoDesdeFactura() {
     const form = document.getElementById('formEquipoFactura');
     const inputSerie = document.getElementById('equipoFacturaSerie');
@@ -3070,7 +3618,12 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
       const tipoSelect = document.getElementById('equipoFacturaIdTipo');
       const tipoCreado = tipoSelect?.options?.[tipoSelect.selectedIndex]?.text?.trim() || '-';
       const formData = new FormData(form);
-      formData.set('idDetalleFactura', equipoActual?.idDetalle || formData.get('idDetalleFactura') || '');
+      const detalleReal = String(equipoActual?.idDetalle || formData.get('idDetalleFactura') || '').trim();
+      if (/^\d+$/.test(detalleReal)) {
+        formData.set('idDetalleFactura', detalleReal);
+      } else {
+        formData.delete('idDetalleFactura');
+      }
       Object.entries(snapshotAtributosEquipoFactura()).forEach(([idAtributo, valor]) => {
         formData.set(`atributo_valores[${idAtributo}]`, valor);
       });
@@ -3095,10 +3648,21 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
         body: formData,
         headers: CrudCommon.jsonHeaders({ 'X-Requested-With': 'XMLHttpRequest' }),
       })
-        .then((r) => {
+        .then(async (r) => {
           const contentType = r.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) return r.json();
-          return { success: r.ok };
+          if (contentType.includes('application/json')) {
+            const data = await r.json();
+            if (!r.ok) {
+              const errores = data?.errors && typeof data.errors === 'object'
+                ? Object.values(data.errors).flat().filter(Boolean)
+                : [];
+              const mensaje = errores[0] || data?.message || `Error ${r.status}`;
+              throw new Error(mensaje);
+            }
+            return data;
+          }
+          if (!r.ok) throw new Error(`Error ${r.status}`);
+          return { success: true };
         })
         .then((data) => {
           if (!data.success) throw new Error(data.message || 'No se pudo crear equipo. Revisá los campos obligatorios.');
@@ -3387,8 +3951,13 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
     window.addEventListener('beforeunload', (e) => {
       const modal = document.getElementById('modalEquipoFactura');
-      const hasPending = state.equiposPendientes.length > 0 && state.indiceEquipoActual < state.equiposPendientes.length;
-      if (modal?.classList.contains('show') && hasPending) {
+      const modalHerramienta = document.getElementById('modalHerramientaFactura');
+      const modalMaterial = document.getElementById('modalMaterialFactura');
+      const hasPending = (
+        (state.equiposPendientes.length > 0 && state.indiceEquipoActual < state.equiposPendientes.length)
+        || (state.altasPendientes.length > 0 && state.indiceAltaActual < state.altasPendientes.length)
+      );
+      if ((modal?.classList.contains('show') || modalHerramienta?.getAttribute('aria-hidden') === 'false' || modalMaterial?.getAttribute('aria-hidden') === 'false') && hasPending) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -3412,7 +3981,7 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
 
   function confirmarAbrirCrearFactura() {
     // Chequear si hay modales abiertos con cambios
-    const modalesAbiertos = ['modalFactura', 'modalEquipoFactura', 'modalProveedor'].some(id => {
+    const modalesAbiertos = ['modalFactura', 'modalEquipoFactura', 'modalHerramientaFactura', 'modalMaterialFactura', 'modalProveedor'].some(id => {
       const modal = document.getElementById(id);
       return modal && (modal.classList.contains('show') || modal.style.display !== 'none');
     });
@@ -3483,6 +4052,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     initFacturaPdfZona();
     initFormularioProveedorFactura();
     initFormularioEquipoDesdeFactura();
+    initFormularioAltaDesdeFactura('Herramienta');
+    initFormularioAltaDesdeFactura('Material');
     initConfirmacionFormBaja();
     initGarantiaFactura();
     initRestoreModalEquipoFacturaTrasEntidad();
@@ -3519,7 +4090,8 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     resetearTotales,
     generarNumeroFactura,
     inicializarDetectorRenglon,
-    verificarRenglonCompletoParaEquipos,
+    verificarRenglonCompletoParaAlta,
+    verificarRenglonCompletoParaEquipos: verificarRenglonCompletoParaAlta,
     verificarPendientesRestantes,
     marcarRenglonCompletado,
     debugClick,
@@ -3533,11 +4105,16 @@ function setGarantiaFactura(baseIso, vtoIso = '') {
     cargarModelosPorMarcaYSeleccionar,
     cargarSectoresPorUbicacionYSeleccionar,
     mostrarModalEquipoActual,
+    mostrarModalAltaActual,
     abrirAltaEquipoPendiente,
     omitirEquipoActualFactura,
+    omitirHerramientaActualFactura: () => omitirAltaActualFactura('Herramienta'),
+    omitirMaterialActualFactura: () => omitirAltaActualFactura('Material'),
     cerrarConfirmAltaEquiposFactura,
     cerrarModalEquipoDesdeFactura,
     cerrarModalEquipoFactura: cerrarModalEquipoDesdeFactura,
+    cerrarModalHerramientaFactura: () => cerrarModalAltaDesdeFactura('Herramienta'),
+    cerrarModalMaterialFactura: () => cerrarModalAltaDesdeFactura('Material'),
     facturasApplyToolbarFilters: applyToolbarFilters,
   });
 

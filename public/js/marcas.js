@@ -75,7 +75,7 @@
                 marcaIsSubmitting = true;
 
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Guardando...';
+                submitBtn.textContent = 'Guardar';
 
                 try {
                     const formData = new FormData(form);
@@ -120,7 +120,7 @@
                 } finally {
                     marcaIsSubmitting = false;
                     submitBtn.disabled = false;
-                    submitBtn.textContent = esCrear ? 'Crear' : 'Actualizar';
+                    submitBtn.textContent = 'Guardar';
                     window.enviandoMarca = false;
                     form.dataset.submitting = 'false';
                 }
@@ -153,7 +153,7 @@
             titulo.textContent = 'Nueva Marca';
             form.action = '/marcas/crear';
             if (inputMarca) inputMarca.value = '';
-            if (submitBtn) submitBtn.textContent = 'Crear';
+            if (submitBtn) submitBtn.textContent = 'Guardar';
             marcaOriginalNombre = '';
             marcaHasChanges = false;
             marcaEditMode = false;
@@ -162,7 +162,7 @@
             titulo.textContent = 'Editar Marca';
             form.action = '/marcas/' + id + '/actualizar';
             if (inputMarca) inputMarca.value = marca || '';
-            if (submitBtn) submitBtn.textContent = 'Actualizar';
+            if (submitBtn) submitBtn.textContent = 'Guardar';
             marcaOriginalNombre = marca || '';
             marcaHasChanges = false;
             marcaEditMode = true;

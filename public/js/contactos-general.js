@@ -21,7 +21,7 @@
             inputTelefono.value = '';
             inputCargo.value = '';
             selectProveedor.value = '';
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
         } else {
             titulo.textContent = 'Editar Contacto';
             form.action = '/contactos/' + id + '/actualizar';
@@ -29,7 +29,7 @@
             inputTelefono.value = telefono || '';
             inputCargo.value = cargo || '';
             selectProveedor.value = proveedor || '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
         }
         overlay.setAttribute('aria-hidden', 'false');
     };

@@ -22,6 +22,11 @@ class MaterialFamilia extends Model
         return $this->hasMany(MaterialMarca::class, 'material_familia_id');
     }
 
+    public function tipificaciones()
+    {
+        return $this->hasMany(MaterialTipificacion::class, 'material_familia_id');
+    }
+
     public function modelos()
     {
         return $this->hasMany(MaterialModelo::class, 'material_familia_id');

@@ -196,7 +196,7 @@
                         <!-- BOTONES -->
                         <div class="totales-footer">
                             <button type="button" class="btn btn-secundario btn-lg" onclick="cerrarModalFactura()">Cancelar</button>
-                            <button type="submit" class="btn btn-primario btn-lg" id="btnSubmitFactura">Crear Factura</button>
+                            <button type="submit" class="btn btn-primario btn-lg" id="btnSubmitFactura">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -219,7 +219,7 @@
             </div>
             <div class="modal-body" id="facturaDetalleContent"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secundario" onclick="cerrarModal('modalVerFactura')">Cerrar</button>
+                <button type="button" class="btn btn-secundario" onclick="cerrarModal('modalVerFactura')">Cancelar</button>
             </div>
         </div>
     </div>
@@ -255,7 +255,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secundario" onclick="cerrarModal('modalBajaFactura')">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Eliminar factura</button>
+                    <button type="submit" class="btn btn-danger">Guardar</button>
                 </div>
             </form>
         </div>
@@ -301,7 +301,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalProveedor()">Cancelar</button>
-                <button type="submit" id="modalProveedorSubmit" class="btn btn-primario">Crear</button>
+                <button type="submit" id="modalProveedorSubmit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>
@@ -324,8 +324,8 @@
                 Este renglón quedará bloqueado hasta completar u omitir la carga de equipos.
             </div>
             <div class="modal-sector-footer">
-                <button type="button" class="btn btn-secundario" onclick="cerrarConfirmAltaEquiposFactura()">Seguir editando</button>
-                <button type="button" class="btn btn-primario" id="btnConfirmAltaEquiposFactura">Dar de alta ahora</button>
+                <button type="button" class="btn btn-secundario" onclick="cerrarConfirmAltaEquiposFactura()">Cancelar</button>
+                <button type="button" class="btn btn-primario" id="btnConfirmAltaEquiposFactura">Guardar</button>
             </div>
         </div>
     </div>
@@ -520,8 +520,8 @@
             </div>
 
             <div class="modal-equipo-footer">
-                <button type="button" class="btn btn-secundario" onclick="omitirEquipoActualFactura()">Omitir</button>
-                <button type="submit" id="modalEquipoFacturaSubmit" class="btn btn-primario">Guardar Equipo</button>
+                <button type="button" class="btn btn-secundario" onclick="omitirEquipoActualFactura()">Cancelar</button>
+                <button type="submit" id="modalEquipoFacturaSubmit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>
@@ -540,7 +540,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalAtributoEquipoFactura()"><span class="footer-acc-label"><span class="acc-k">C</span>ancelar</span></button>
-                <button type="submit" class="btn btn-primario"><span class="footer-acc-label">Crea<span class="acc-k">r</span></span></button>
+                <button type="submit" class="btn btn-primario"><span class="footer-acc-label">Guarda<span class="acc-k">r</span></span></button>
             </div>
         </form>
     </div>
@@ -564,9 +564,131 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalOpcionAtributoEquipoFactura()">Cancelar</button>
-                <button type="submit" class="btn btn-primario">Crear</button>
+                <button type="submit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>
 </div>
 
+<div id="modalHerramientaFactura" class="modal-overlay" aria-hidden="true" data-modal-focus="#herramientaFacturaFamilia">
+    <div class="modal-sector hm-modal">
+        <div class="modal-sector-header">
+            <h2>Alta de Herramienta desde Factura <span id="herramientaFacturaRowInfo" style="font-size: 0.85em; color: #666; font-weight: normal;"></span></h2>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalHerramientaFactura()" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formHerramientaFactura" method="POST" class="modal-sector-body">
+            @csrf
+            <div class="form-grupo">
+                <label for="herramientaFacturaFamilia">Familia</label>
+                <div class="input-group">
+                    <select id="herramientaFacturaFamilia" name="herramienta_familia_id" required>
+                        <option value="">— Seleccionar familia —</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-agregar-entidad" id="btnHerramientaFacturaNuevaFamilia" title="Crear familia">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grupo">
+                <label for="herramientaFacturaDescripcion">Descripción</label>
+                <input type="text" id="herramientaFacturaDescripcion" name="descripcion" required maxlength="180" autocomplete="off">
+            </div>
+            <div class="form-grupo">
+                <label for="herramientaFacturaMarca">Marca</label>
+                <div class="input-group">
+                    <select id="herramientaFacturaMarca" name="herramienta_marca_id" required>
+                        <option value="">— Seleccionar marca —</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-agregar-entidad" id="btnHerramientaFacturaNuevaMarca" title="Crear marca">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grupo">
+                <label for="herramientaFacturaModelo">Modelo</label>
+                <div class="input-group">
+                    <select id="herramientaFacturaModelo" name="herramienta_modelo_id" required>
+                        <option value="">— Seleccionar modelo —</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-agregar-entidad" id="btnHerramientaFacturaNuevoModelo" title="Crear modelo">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-sector-footer">
+                <button type="button" class="btn btn-secundario" onclick="omitirHerramientaActualFactura()">Cancelar</button>
+                <button type="submit" id="btnHerramientaFacturaGuardar" class="btn btn-primario">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalMaterialFactura" class="modal-overlay" aria-hidden="true" data-modal-focus="#materialFacturaFamilia">
+    <div class="modal-sector hm-modal">
+        <div class="modal-sector-header">
+            <h2>Nuevo material <span id="materialFacturaRowInfo" style="font-size: 0.85em; color: #666; font-weight: normal;"></span></h2>
+            <button type="button" class="modal-cerrar" onclick="cerrarModalMaterialFactura()" aria-label="Cerrar">&times;</button>
+        </div>
+        <form id="formMaterialFactura" method="POST" class="modal-sector-body">
+            @csrf
+            <input type="hidden" name="factura_id" id="materialFacturaIdFactura">
+            <input type="hidden" name="factura_numero" id="materialFacturaNumeroFactura">
+            <input type="hidden" name="factura_fecha" id="materialFacturaFechaFactura">
+            <input type="hidden" name="proveedor_id" id="materialFacturaProveedorId">
+            <input type="hidden" name="proveedor_nombre" id="materialFacturaProveedorNombre">
+            <input type="hidden" name="precio_unitario" id="materialFacturaPrecioUnitario">
+            <div class="form-grupo">
+                <label for="materialFacturaFamilia">Familia</label>
+                <div class="input-group">
+                    <select id="materialFacturaFamilia" name="material_familia_id" required>
+                        <option value="">— Seleccionar familia —</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-agregar-entidad" id="btnMaterialFacturaNuevaFamilia" title="Crear familia">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grupo">
+                <label for="materialFacturaTipificacion">Nombre (Tipificación familia)</label>
+                <div class="input-group">
+                    <select id="materialFacturaTipificacion" name="material_tipificacion_id" required>
+                        <option value="">— Seleccionar —</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-agregar-entidad" id="btnMaterialFacturaNuevaTipificacion" title="Crear tipificación">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grupo">
+                <label for="materialFacturaMarca">Marca</label>
+                <div class="input-group">
+                    <select id="materialFacturaMarca" name="material_marca_id" required>
+                        <option value="">— Seleccionar marca —</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-agregar-entidad" id="btnMaterialFacturaNuevaMarca" title="Crear marca">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grupo">
+                <label for="materialFacturaModelo">Modelo</label>
+                <div class="input-group">
+                    <select id="materialFacturaModelo" name="material_modelo_id" required>
+                        <option value="">— Seleccionar modelo —</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-agregar-entidad" id="btnMaterialFacturaNuevoModelo" title="Crear modelo">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grupo">
+                <label for="materialFacturaStock">Stock</label>
+                <input type="number" id="materialFacturaStock" name="stock" required min="0" step="0.0001" autocomplete="off">
+            </div>
+            <div class="modal-sector-footer">
+                <button type="button" class="btn btn-secundario" onclick="omitirMaterialActualFactura()">Cancelar</button>
+                <button type="submit" id="btnMaterialFacturaGuardar" class="btn btn-primario">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>

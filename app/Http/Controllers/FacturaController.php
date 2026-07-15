@@ -12,6 +12,8 @@ use App\Models\Modelo;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Sector;
+use App\Models\Herramienta;
+use App\Models\Material;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -70,24 +72,66 @@ class FacturaController extends Controller
             $factura = Factura::with('proveedor')->findOrFail($id);
             $factura->load(['detalles', 'pdfs']);
             
-            // Filtrar solo detalles relevantes para equipos
-            $detallesCompraEquipo = $factura->detalles->filter(fn($d) => $d->operacion === 'compra' && $d->de === 'Equipo');
-            
-            $detallesConEquipos = $detallesCompraEquipo->map(function ($detalle) use ($factura) {
-                $equipos = \App\Models\Equipo::where('numeroFactura', $factura->numero)
-                    ->where('observacion', 'LIKE', '%' . $detalle->concepto . '%')
-                    ->take(10)
-                    ->with('tipo')
-                    ->get(['id', 'serie', 'idTipo'])
-                    ->map(fn($e) => [
-                        'id' => $e->id,
-                        'serie' => $e->serie,
-                        'tipo' => $e->tipo->nombreTipo ?? 'N/A'
-                    ]);
-                
+            $detallesCompra = $factura->detalles->filter(fn($d) => $d->operacion === 'compra');
+
+            $detallesConAltas = $detallesCompra->map(function ($detalle) use ($factura) {
+                $equipos = collect();
+                $herramientas = collect();
+                $materiales = collect();
+
+                if ($detalle->de === 'Equipo') {
+                    $equipos = Equipo::where('numeroFactura', $factura->numero)
+                        ->where('observacion', 'LIKE', '%' . $detalle->concepto . '%')
+                        ->take(10)
+                        ->with('tipo')
+                        ->get(['id', 'serie', 'idTipo'])
+                        ->map(fn($e) => [
+                            'id' => $e->id,
+                            'serie' => $e->serie,
+                            'tipo' => $e->tipo->nombreTipo ?? 'N/A'
+                        ]);
+                }
+
+                if ($detalle->de === 'Herramienta') {
+                    $queryHerramientas = Herramienta::with(['familia', 'marca', 'modelo']);
+                    if (!empty($detalle->idCodigoCodigo)) {
+                        $queryHerramientas->where('id', (int) $detalle->idCodigoCodigo);
+                    } else {
+                        $queryHerramientas->where('descripcion', $detalle->concepto)->latest('id')->limit(1);
+                    }
+                    $herramientas = $queryHerramientas->get()
+                        ->map(fn($h) => [
+                            'id' => $h->id,
+                            'descripcion' => $h->descripcion,
+                            'familia' => $h->familia->nombre ?? 'N/A',
+                            'marca' => $h->marca->nombre ?? 'N/A',
+                            'modelo' => $h->modelo->nombre ?? 'N/A',
+                        ]);
+                }
+
+                if ($detalle->de === 'Material') {
+                    $queryMateriales = Material::with(['familia', 'marca', 'modelo']);
+                    if (!empty($detalle->idCodigoCodigo)) {
+                        $queryMateriales->where('id', (int) $detalle->idCodigoCodigo);
+                    } else {
+                        $queryMateriales->where('descripcion', $detalle->concepto)->latest('id')->limit(1);
+                    }
+                    $materiales = $queryMateriales->get()
+                        ->map(fn($m) => [
+                            'id' => $m->id,
+                            'descripcion' => $m->descripcion,
+                            'familia' => $m->familia->nombre ?? 'N/A',
+                            'marca' => $m->marca->nombre ?? 'N/A',
+                            'modelo' => $m->modelo->nombre ?? 'N/A',
+                            'cantidad_alta' => $detalle->cantidad,
+                        ]);
+                }
+
                 return [
                     'detalle' => $detalle,
-                    'equipos' => $equipos
+                    'equipos' => $equipos,
+                    'herramientas' => $herramientas,
+                    'materiales' => $materiales,
                 ];
             });
             
@@ -122,6 +166,7 @@ class FacturaController extends Controller
                     'porcentajeDto' => $d->porcentajeDto,
                     'subtotal' => $d->subtotal,
                     'obra' => $d->obra,
+                    'idCodigoCodigo' => $d->idCodigoCodigo,
                 ]),
                 'pdfs' => $factura->pdfs->map(static fn ($p) => [
                     'idFacturaPdf' => $p->idFacturaPdf,
@@ -129,7 +174,7 @@ class FacturaController extends Controller
                     'tamano_bytes' => $p->tamano_bytes,
                     'created_at' => $p->created_at?->format('Y-m-d H:i'),
                 ]),
-                'detalles_con_equipos' => $detallesConEquipos,
+                'detalles_con_altas' => $detallesConAltas,
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([

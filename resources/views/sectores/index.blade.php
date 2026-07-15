@@ -82,7 +82,7 @@
                     Cancelar
                 </button>
                 <button type="submit" id="modalSectorSubmit" class="btn btn-primario">
-                    Crear
+                    Guardar
                 </button>
             </div>
         </form>
@@ -113,7 +113,7 @@
                 <tbody id="bodyUbicacionesSector"></tbody>
             </table>
             <div class="modal-sector-footer">
-                <button type="button" class="btn btn-secundario" onclick="cerrarModalUbicacionesSector()">Cerrar</button>
+                <button type="button" class="btn btn-secundario" onclick="cerrarModalUbicacionesSector()">Guardar</button>
             </div>
         </div>
     </div>

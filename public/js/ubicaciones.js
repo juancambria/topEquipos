@@ -98,7 +98,7 @@
             if (inputTelefono) inputTelefono.value = '';
             if (inputDireccion) inputDireccion.value = '';
             if (inputCodigoPostal) inputCodigoPostal.value = '';
-            if (submitBtn) submitBtn.textContent = 'Crear';
+            if (submitBtn) submitBtn.textContent = 'Guardar';
             // Reset estado para crear
             isUbicacionEditMode = false;
             ubicacionOriginalValues = {};
@@ -122,7 +122,7 @@
             if (inputTelefono) inputTelefono.value = telefono || '';
             if (inputDireccion) inputDireccion.value = direccion || '';
             if (inputCodigoPostal) inputCodigoPostal.value = codigoPostal || '';
-            if (submitBtn) submitBtn.textContent = 'Actualizar';
+            if (submitBtn) submitBtn.textContent = 'Guardar';
             // Configurar dirty state para edit
             isUbicacionEditMode = true;
             ubicacionOriginalValues = {

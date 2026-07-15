@@ -95,6 +95,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    const logVistaActiva = nombre => {
+        const vista = nombre || desktop.dataset.currentTitle || document.title || 'Inicio';
+        if (window.AppLogger && typeof window.AppLogger.view === 'function') {
+            window.AppLogger.view(vista);
+            return;
+        }
+        console.log('[APP][VISTA] ' + vista);
+    };
+
+    logVistaActiva();
+
     const isHomeDesktop = desktop.dataset.isHome === 'true';
 
     let zIndex = 20;
@@ -753,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openRouteInWindow = link => {
         const routeKey = normalizeUrl(link.href);
         link.dataset.routeKey = routeKey;
+        const tituloVista = link.textContent.trim();
 
         const existingWindow = [...windows.values()].find(item => item.routeKey === routeKey)?.windowEl;
         if (existingWindow) {
@@ -762,15 +774,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 bringToFront(existingWindow);
                 focusEmbeddedWindowContent(existingWindow);
             }
+            logVistaActiva(tituloVista);
             return;
         }
 
         link.classList.add('sidebar-link-open');
         buildWindow({
-            title: link.textContent.trim(),
+            title: tituloVista,
             routeKey,
             iframeUrl: link.href,
         });
+        logVistaActiva(tituloVista);
     };
 
     interactiveLinks.forEach(link => {

@@ -239,7 +239,10 @@
 
                     <div class="form-grupo">
                         <label for="equipoPrecio">Precio</label>
-                        <input type="number" step="0.01" id="equipoPrecio" name="precio" placeholder="0.00" class="form-control">
+                        <div class="input-moneda">
+                            <span class="input-moneda-simbolo" aria-hidden="true">$</span>
+                            <input type="number" step="0.01" id="equipoPrecio" name="precio" placeholder="0.00" class="form-control">
+                        </div>
                     </div>
 
                     <div class="form-grupo form-grupo-check">
@@ -344,6 +347,13 @@
     </div>
 </div>
 
+<div id="modalImagenEquipo" class="modal-overlay modal-imagen-equipo-overlay" aria-hidden="true">
+    <div class="modal-imagen-equipo" role="dialog" aria-modal="true" aria-label="Imagen ampliada del equipo">
+        <button type="button" id="modalImagenEquipoCerrar" class="modal-cerrar modal-imagen-equipo-cerrar" aria-label="Cerrar imagen">&times;</button>
+        <img id="modalImagenEquipoImg" src="" alt="Imagen del equipo ampliada">
+    </div>
+</div>
+
 <div id="modalAtributoEquipo" class="modal-overlay" aria-hidden="true" data-modal-focus="#equipoNuevoAtributoNombre">
     <div class="modal-sector">
         <div class="modal-sector-header">
@@ -381,7 +391,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalOpcionAtributoEquipo()">Cancelar</button>
-                <button type="submit" class="btn btn-primario">Crear</button>
+                <button type="submit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>

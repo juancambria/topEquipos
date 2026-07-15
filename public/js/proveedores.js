@@ -128,7 +128,7 @@
             inputCiudad.value = '';
             inputProvincia.value = '';
             inputCodigoPostal.value = '';
-            submitBtn.textContent = 'Crear';
+            submitBtn.textContent = 'Guardar';
         } else {
             titulo.textContent = 'Editar Proveedor';
             form.action = '/proveedores/' + id + '/actualizar';
@@ -139,7 +139,7 @@
             inputCiudad.value = ciudad || '';
             inputProvincia.value = provincia || '';
             inputCodigoPostal.value = codigo_postal || '';
-            submitBtn.textContent = 'Actualizar';
+            submitBtn.textContent = 'Guardar';
         }
         guardarValoresOriginales();
         overlay.setAttribute('aria-hidden', 'false');
@@ -278,7 +278,7 @@
                 formData.append('_token', tokenVal);
 
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Guardando...';
+                submitBtn.textContent = 'Guardar';
 
                 fetch(form.action, {
                     method: 'POST',
@@ -307,7 +307,7 @@
                 })
                 .finally(() => {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = esCrear ? 'Crear' : 'Actualizar';
+                    submitBtn.textContent = 'Guardar';
                 });
 
             },

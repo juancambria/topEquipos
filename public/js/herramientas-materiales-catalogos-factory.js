@@ -284,6 +284,93 @@
       });
     }
 
+    function initTipificaciones() {
+      var spec = config.pages.tipificaciones;
+      if (!spec) return;
+      var page = c.$(spec.pageId);
+      if (!page) return;
+
+      var modal = ensureCrudModal(spec.modal.id, 'Tipificación', ''
+        + '<input type="hidden" id="' + spec.modal.fields.id + '">'
+        + '<div class="form-grupo"><label for="' + spec.modal.fields.family + '">Familia</label>'
+        + '<div class="input-group"><select id="' + spec.modal.fields.family + '" required><option value="">— Seleccionar familia —</option></select>'
+        + '<div class="input-group-append"><button type="button" class="btn btn-agregar-entidad" id="' + spec.modal.buttons.quickFamily + '">+</button></div></div></div>'
+        + '<div class="form-grupo"><label for="' + spec.modal.fields.name + '">Nombre</label><input type="text" id="' + spec.modal.fields.name + '" maxlength="120" required></div>'
+      );
+      var form = c.$(spec.modal.id + 'Form');
+
+      async function loadFamilies(selected) {
+        var data = await c.fetchJson(page.dataset.apiFamilias);
+        c.fillSelect(c.$(spec.modal.fields.family), data.data, '— Seleccionar familia —', selected);
+      }
+
+      var selection = CrudCommon.createRowSelection({
+        rowSelector: spec.rowSelector,
+        selectedInfo: c.$(spec.selectedInfoId),
+        buttons: [c.$(spec.buttons.edit), c.$(spec.buttons.delete)],
+        outsideIgnoreSelectors: [spec.buttons.create, spec.buttons.edit, spec.buttons.delete].map(function(id) { return '#' + id; }),
+        formatInfo: function(row) { return row ? ('Tipificación seleccionada: ' + row.dataset.nombre + ' (ID ' + row.dataset.id + ')') : 'Ninguna tipificación seleccionada'; },
+        onDoubleClick: function(row) { if (selection.getSelectedRow() !== row) selection.select(row); openEdit(row); },
+      });
+
+      function openCreate() {
+        c.$(spec.modal.fields.id).value = '';
+        c.$(spec.modal.fields.name).value = '';
+        c.fillSelect(c.$(spec.modal.fields.family), [], '— Seleccionar familia —');
+        loadFamilies('');
+        var st = ensureState(spec.modal.id);
+        st.mode = 'create';
+        st.requiredFields = [spec.modal.fields.family, spec.modal.fields.name];
+        c.openModal(modal);
+        setTimeout(function() { setModalInitial(spec.modal.id, form); updateSubmitState(spec.modal.id, form); }, 0);
+      }
+
+      async function openEdit(rowArg) {
+        var row = rowArg || selection.getSelectedRow();
+        if (!row) return;
+        c.$(spec.modal.fields.id).value = row.dataset.id;
+        c.$(spec.modal.fields.name).value = row.dataset.nombre || '';
+        await loadFamilies(row.dataset.familiaId || '');
+        var st = ensureState(spec.modal.id);
+        st.mode = 'edit';
+        st.requiredFields = [spec.modal.fields.family, spec.modal.fields.name];
+        c.openModal(modal);
+        setTimeout(function() { setModalInitial(spec.modal.id, form); updateSubmitState(spec.modal.id, form); }, 0);
+      }
+
+      watchModalDirty(spec.modal.id, form);
+      c.$(spec.modal.buttons.quickFamily)?.addEventListener('click', async function() {
+        var creada = await createQuickFamily(page, spec.modal.quickFamilyIds);
+        if (creada?.id) { await loadFamilies(creada.id); updateSubmitState(spec.modal.id, form); }
+      });
+      c.$(spec.buttons.create)?.addEventListener('click', openCreate);
+      c.$(spec.buttons.edit)?.addEventListener('click', function() { openEdit(); });
+      c.$(spec.buttons.delete)?.addEventListener('click', function() {
+        var row = selection.getSelectedRow();
+        if (!row) return;
+        abrirModalConfirmacion('Eliminar tipificación', 'Eliminar tipificación. ¿Desea continuar?', async function() {
+          try { await c.postJson(page.dataset.base.replace(/\/$/, '') + '/' + row.dataset.id + '/baja', {}); location.reload(); }
+          catch (e) { c.toast(e.message, 'error'); }
+        }, false, false);
+      });
+
+      form?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var id = c.$(spec.modal.fields.id).value;
+        var ok = await c.openConfirm(id ? 'Actualizar tipificación' : 'Crear tipificación', (id ? 'Actualizar' : 'Crear') + ' tipificación. ¿Desea continuar?', false);
+        if (!ok) return;
+        var payload = { nombre: c.$(spec.modal.fields.name).value };
+        payload[config.params.family] = c.$(spec.modal.fields.family).value;
+        var url = id ? (page.dataset.base.replace(/\/$/, '') + '/' + id + '/actualizar') : page.dataset.crear;
+        try {
+          var res = await c.postJson(url, payload);
+          c.persistSelection(spec.rowSelector, id ? Number(id) : (res?.data?.id ?? null));
+          c.closeModal(modal);
+          location.reload();
+        } catch (err) { c.toast(err.message, 'error'); }
+      });
+    }
+
     function initModelos() {
       var spec = config.pages.modelos;
       var page = c.$(spec.pageId);
@@ -399,6 +486,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       initFamilias();
       initMarcas();
+      initTipificaciones();
       initModelos();
       CrudCommon.initSearchInput();
       CrudCommon.initSortableHeaders('th.sortable');

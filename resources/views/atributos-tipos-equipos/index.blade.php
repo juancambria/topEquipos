@@ -133,7 +133,7 @@
             </div>
             <div class="modal-sector-footer">
                 <button type="button" class="btn btn-secundario" onclick="cerrarModalCrearAtributo()">Cancelar</button>
-                <button type="submit" class="btn btn-primario">Guardar atributo</button>
+                <button type="submit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </div>

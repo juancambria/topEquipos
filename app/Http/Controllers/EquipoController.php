@@ -145,7 +145,7 @@ class EquipoController extends Controller
         $marcas      = Marca::activos()->orderBy('marca')->get();
         $tipos       = Tipo::activos()->orderBy('nombreTipo')->get();
         $modelos     = Modelo::activos()->orderBy('modelo')->get();
-        $ubicaciones = Ubicacion::activos()->orderBy('nombre')->get();
+        $ubicaciones = Ubicacion::activos()->orderBy('codigo')->orderBy('nombre')->get();
         $sectores    = Sector::activos()->orderBy('nombre')->get();
 
         return view('equipos.index', compact(
@@ -220,7 +220,7 @@ class EquipoController extends Controller
         $marcas      = Marca::orderBy('marca')->get();
         $tipos       = Tipo::orderBy('nombreTipo')->get();
         $modelos     = Modelo::orderBy('modelo')->get();
-        $ubicaciones = Ubicacion::orderBy('nombre')->get();
+        $ubicaciones = Ubicacion::orderBy('codigo')->orderBy('nombre')->get();
         $sectores    = Sector::orderBy('nombre')->get();
 
         return view('equipos.index', compact(
@@ -249,8 +249,11 @@ class EquipoController extends Controller
             'sector_id'     => 'required|exists:sectores,id',
             'imagen'        => 'nullable|image|mimes:jpeg,png,gif|max:2048',
             'vtoGarantia'   => 'nullable|date',
-            'precio'        => 'nullable|numeric|min:0',
+            'precio'        => 'required|numeric|gt:0',
             'idDetalleFactura' => 'nullable|integer|exists:factura_detalles,idFacturaDet',
+        ], [
+            'precio.required' => 'Debe ingresar un precio para el equipo.',
+            'precio.gt' => 'El precio del equipo debe ser mayor a 0.',
         ]);
 
         $data['informa_al_seguro'] = $this->normalizarInformaSeguroRequest($request);

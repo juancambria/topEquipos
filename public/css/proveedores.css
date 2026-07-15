@@ -1,3 +1,13 @@
+.desktop-area > .page-container.pagina-proveedores,
+.window-page-content.page-container.pagina-proveedores,
+.embedded-page > .page-container.pagina-proveedores {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .proveedores-toolbar {
     flex-wrap: nowrap;
 }
@@ -28,6 +38,18 @@
 .proveedores-tabla-wrap .btn-link {
     padding: 4px 8px;
     white-space: nowrap;
+}
+
+.proveedores-tabla-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.proveedores-tabla-wrap .tabla-proveedores thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .tabla-proveedores {

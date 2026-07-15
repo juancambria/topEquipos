@@ -67,6 +67,7 @@
                                     </button>
                                     <div class="app-submenu-panel">
                                         <a href="{{ route('materiales.familias.index') }}">Familias</a>
+                                        <a href="{{ route('materiales.tipificaciones.index') }}">Tipificación familias</a>
                                         <a href="{{ route('materiales.marcas.index') }}">Marcas</a>
                                         <a href="{{ route('materiales.modelos.index') }}">Modelos</a>
                                         <a href="{{ route('materiales.index') }}">Materiales</a>
@@ -84,6 +85,17 @@
                                 <a href="{{ route('ubicaciones.index') }}">Ubicaciones</a>
                                 <a href="{{ route('sectores.index') }}">Sectores</a>
                                 <a href="{{ route('lugares.equiposSector.index') }}">Gestión de Equipos por Sector</a>
+                            </div>
+                        </div>
+
+                        <div class="app-menu">
+                            <button type="button" class="app-menu-toggle" data-menu="operaciones">
+                                Operaciones <span class="app-menu-arrow">▾</span>
+                            </button>
+                            <div class="app-menu-panel" id="menu-operaciones">
+                                <a href="{{ route('incidencias.index') }}">Incidencias</a>
+                                <a href="{{ route('partesTrabajo.index') }}">Partes de trabajo</a>
+                                <a href="{{ route('personasTecnicos.index') }}">Técnicos</a>
                             </div>
                         </div>
 
@@ -137,6 +149,10 @@
                             <span class="topbar-shortcut-icon">🏢</span>
                             Proveedores
                         </a>
+                        <a href="{{ route('incidencias.index') }}" class="topbar-shortcut">
+                            <span class="topbar-shortcut-icon">🚨</span>
+                            Incidencias
+                        </a>
                         <a href="{{ route('ubicaciones.index') }}" class="topbar-shortcut">
                             <span class="topbar-shortcut-icon">📍</span>
                             Ubicaciones
@@ -188,7 +204,9 @@
         });
     </script>
 @endif
-@include('partials.modales-entidades')
+@if(request()->routeIs('equipos.*', 'marcas.*', 'tipos.*', 'modelos.*', 'ubicaciones.*', 'sectores.*'))
+    @include('partials.modales-entidades')
+@endif
 
 @if(session('equiposPorCrear'))
 <div id="datos-equipos"
